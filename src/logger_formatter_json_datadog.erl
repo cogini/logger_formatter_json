@@ -48,14 +48,31 @@ fold_meta(file, V, Acc) ->
     [{"logger.file_name", V} | Acc];
 fold_meta(line, V, Acc) ->
     [{"line", V} | Acc];
-fold_meta(mfa, {M, F, A}, Acc) when is_atom(M), is_atom(F), is_list(A) ->
-    fold_meta(mfa, {M, F, length(A)}, Acc);
-fold_meta(mfa, {M, F, A}, Acc) when is_atom(M), is_atom(F), is_integer(A) ->
-    [{"logger.method_name", io_lib:fwrite("~tw:~tw/~w", [M, F, A])} | Acc];
+fold_meta(mfa, V, Acc) ->
+    [{"logger.method_name", format_mfa(V)} | Acc];
 fold_meta(pid, V, Acc) when is_pid(V) ->
     [{"logger.thread_name", pid_to_list(V)} | Acc];
+fold_meta(trace_id, V, Acc) ->
+    [{"dd.trace_id", V} | Acc];
+fold_meta(span_id, V, Acc) ->
+    [{"dd.span_id", V} | Acc];
+fold_meta(crash_reason, V, Acc) ->
+    [{"error.initial_call", format_mfa(V)} | Acc];
 fold_meta(K, V, Acc) ->
     [{K, V} | Acc].
+
+-spec format_mfa({M, F, A}) -> unicode:chardata() when
+      M :: atom(),
+      F :: atom(),
+      A :: integer() | list().
+format_mfa({M, F, A}) when is_atom(M), is_atom(F), is_integer(A) ->
+    io_lib:fwrite("~tw:~tw/~w", [M, F, A]);
+format_mfa({M, F, A}) when is_atom(M), is_atom(F), is_list(A) ->
+    %% arguments are passed as a literal list ({mod, fun, [a, b, c]})
+    format_mfa({M, F, length(A)});
+format_mfa(MFA) ->
+    % to_string(MFA).
+    MFA.
 
 % Handle metadata which combines multiple metadata keys
 process_meta_map(Map = #{module := Module, function := Function, arity := Arity}, Acc) ->
@@ -85,6 +102,7 @@ format_time(SysTime, #{time_offset := Offset, time_designator := Des})
     calendar:system_time_to_rfc3339(SysTime,[{unit,microsecond},
                                              {offset,Offset},
                                              {time_designator,Des}]).
+
 
 % to_string(X) when is_pid(X) ->
 %     pid_to_list(X);
