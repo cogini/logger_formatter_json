@@ -1,5 +1,5 @@
 {application, logger_formatter_json,
- [{description, "An OTP library"},
+ [{description, "A formatter for the OTP logger application that outputs JSON"},
   {vsn, "0.1.0"},
   {registered, []},
   {applications,
@@ -10,5 +10,5 @@
   {modules, []},
 
   {licenses, ["Apache 2.0"]},
-  {links, []}
+  {links, [{"Github", "https://github.com/cogini/logger_formatter_json/"}]}
  ]}.
