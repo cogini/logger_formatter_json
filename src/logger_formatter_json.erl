@@ -430,6 +430,8 @@ check_limit(_) ->
 
 check_template([Key|T]) when is_atom(Key) ->
     check_template(T);
+check_template([{Key,_KeyOut}|T]) when is_atom(Key) ->
+    check_template(T);
 check_template([Key|T]) when is_list(Key), is_atom(hd(Key)) ->
     case lists:all(fun(X) when is_atom(X) -> true;
                       (_) -> false
@@ -440,6 +442,10 @@ check_template([Key|T]) when is_list(Key), is_atom(hd(Key)) ->
         false ->
             error
     end;
+check_template([{{Key,KeyOut},IfExist,Else}|T])
+  when is_atom(Key) orelse
+       (is_list(Key) andalso is_atom(hd(Key))) ->
+    check_template([{Key,IfExist,Else}|T]);
 check_template([{Key,IfExist,Else}|T])
   when is_atom(Key) orelse
        (is_list(Key) andalso is_atom(hd(Key))) ->
