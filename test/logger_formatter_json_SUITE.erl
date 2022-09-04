@@ -11,17 +11,17 @@ unstructured() ->
     [{docs, "logs that aren't structured get passed through with a re-frame"}].
 unstructured(_) ->
     ?assertEqual(
-       <<"{\"message\":\"abc\",\"syslog.severity\":\"info\"}">>,
+       <<"{\"syslog.severity\":\"info\",\"message\":\"abc\"}">>,
        logger_formatter_json:format(#{level => info, msg => {string, "abc"},
                                       meta => #{}}, #{})),
     ?assertEqual(
-       <<"{\"message\":\"abc\",\"syslog.severity\":\"info\"}">>,
+       <<"{\"syslog.severity\":\"info\",\"message\":\"abc\"}">>,
        logger_formatter_json:format(#{level => info,
                                       msg => {string, [<<"abc">>]},
                                       meta => #{}}, #{})
     ),
     ?assertEqual(
-       <<"{\"message\":\"hello world\",\"syslog.severity\":\"info\"}">>,
+       <<"{\"syslog.severity\":\"info\",\"message\":\"hello world\"}">>,
        logger_formatter_json:format(#{level => info,
                                       msg => {"hello ~s", ["world"]},
                                       meta => #{}}, #{})
@@ -30,11 +30,7 @@ unstructured(_) ->
 
 basic(_) ->
     ?assertEqual(
-       <<"{\"hi\":\"there\",\"syslog.severity\":\"info\"}">>,
-       logger_formatter_json:format(#{level => info, msg => {report, #{hi => there}}, meta => #{}}, #{})
-    ),
-    ?assertEqual(
-       <<"{\"hi\":\"there\",\"syslog.severity\":\"info\"}">>,
+       <<"{\"syslog.severity\":\"info\",\"hi\":\"there\"}">>,
        logger_formatter_json:format(#{level => info, msg => {report, #{hi => there}}, meta => #{}}, #{})
     ),
     ok.
