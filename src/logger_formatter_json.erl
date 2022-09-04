@@ -129,6 +129,10 @@ to_string(time,Time,Config) ->
     format_time(Time,Config);
 to_string(mfa,MFA,Config) ->
     format_mfa(MFA,Config);
+to_string(initial_call,MFA,Config) ->
+    format_mfa(MFA,Config);
+% to_string(crash_reason,Value,Config) ->
+%     format_crash_reason(Value,Config);
 to_string(_,Value,Config) ->
     to_string(Value,Config).
 
@@ -191,6 +195,8 @@ format_msg({report,Report},#{report_cb:=Fun}=Meta,Config) when is_function(Fun,2
                         [Report,{C,R,logger:filter_stacktrace(?MODULE,S)}]},
                        Meta,Config)
     end;
+% format_msg({report,#{label:={error_logger,_}, format:=Format, args:=Args},Meta,Config) ->
+%     format_msg({Format, Args}, Meta, Config);
 format_msg({report,Report},_Meta,_Config) when is_map(Report) ->
     Report;
 format_msg({report,Report},Meta,Config) ->
@@ -304,6 +310,10 @@ format_mfa({M,F,A},Config) when is_atom(M), is_atom(F), is_list(A) ->
 format_mfa(MFA,Config) ->
     to_string(MFA,Config).
 
+% format_crash_reason({throw, Reason} ->
+% format_crash_reason({exit, Reason} ->
+% format_crash_reason({error, Exception, Stacktrace} ->
+
 %% Ensure that all valid configuration parameters exist in the final
 %% configuration map
 -spec add_default_config(Config) -> logger:formatter_config() when
@@ -330,15 +340,21 @@ add_default_template(Config) ->
 default_template(_) ->
     [
         {time, "syslog.timestamp"},
-        {level, "syslog.severity"},
+        % {level, "syslog.severity"},
+        % https://docs.datadoghq.com/logs/log_configuration/processors/
+        {level, "status"},
         {msg, message},
+        % https://docs.datadoghq.com/logs/log_configuration/attributes_naming_convention/#source-code
+        % error.kind	string	The error type or kind (or code in some cases).
+        % error.message	string	A concise, human-readable, one-line message explaining the event.
+        % error.stack	string	The stack trace or the complementary information about the error.
         {file, "logger.file_name"},
         line,
         {mfa, "logger.method_name"},
         {pid, "logger.thread_name"},
         {trace_id, "dd.trace_id"},
         {span_id, "dd.span_id"}
-        %  {crash_reason, [{crash_reason, "error.initial_call"}, format_mfa(V)} | Acc];
+
     ].
 
 get_max_size(undefined) ->
