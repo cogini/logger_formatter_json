@@ -73,45 +73,7 @@ format(#{level:=Level,msg:=Msg0,meta:=Meta},Config0)
         do_format(Level,Meta,AT,Config)
     ],
     Result = lists:flatten(Result0),
-    thoas:encode(Result).
-
-% format(Map = #{msg := {report, #{label := {error_logger, _}, format := Format, args := Terms}}}, FConfig) ->
-%     format(Map#{msg := {report, #{msg => unicode:characters_to_binary(io_lib:format(Format, Terms))}}}, FConfig);
-
-% % {report, #{
-% %            label => {supervisor,progress},
-% %            report => [
-% %                       {supervisor,{<0.1030.0>,'Elixir.Phoenix.Socket.PoolSupervisor'}},
-% %                       {started,[
-% %                                 {pid,<0.1031.0>},
-% %                                 {id,0},
-% %                                 {mfargs,{'Elixir.Phoenix.Socket.PoolSupervisor',start_pooled,[#Ref<0.2999953725.2101477377.251393>,0]}},
-% %                                 {restart_type,permanent},
-% %                                 {significant,false},
-% %                                 {shutdown,infinity},
-% %                                 {child_type,supervisor}
-% %                                ]}
-% %                      ]
-% %           }
-% % }
-
-% format(Map = #{msg := {report, KeyVal}}, FConfig) when is_list(KeyVal) ->
-%     format(Map#{msg := {report, maps:from_list(KeyVal)}}, FConfig);
-
-% % format(Map = #{msg := {report, #{label := {supervisor, _}, format := Format, args := Terms}}}, FConfig) ->
-% %     format(Map#{msg := {report, #{message => unicode:characters_to_binary(io_lib:format(Format, Terms))}}}, FConfig);
-% % {report,#{label => {supervisor,progress},report => [{supervisor,{local,'Elixir.PhoenixContainerExample.Supervisor'}},{started,[{pid,<0.1017.0>},{id,'Elixir.PhoenixContainerExampleWeb.Endpoint'},{mfargs,{'Elixir.PhoenixContainerExampleWeb.Endpoint',start_link,[[]]}},{restart_type,permanent},{significant,false},{shutdown,infinity},{child_type,supervisor}]}]}}
-
-% format(#{level := Level, msg := {report, Msg}, meta := Meta0}, FConfig) when is_map(Msg) ->
-%     Config = add_default_config(FConfig),
-%     Meta = maps:merge(Meta0, #{level => Level}),
-%     format_msg(Msg, Meta, Config);
-
-% format(Map = #{msg := {string, String}}, FConfig) ->
-%     format(Map#{msg := {report, #{msg => unicode:characters_to_binary(String)}}}, FConfig);
-
-% format(Map = #{msg := {Format, Terms}}, FConfig) ->
-%     format(Map#{msg := {report, #{msg => unicode:characters_to_binary(io_lib:format(Format, Terms))}}}, FConfig).
+    [thoas:encode_to_iodata(Result), "\n"].
 
 
 do_format(Level,Data,[Key|Format],Config) when is_atom(Key) ->
@@ -159,11 +121,6 @@ value([],Value) ->
     {ok,Value};
 value(_,_) ->
     error.
-
-% to_binary(X,_Config) when is_binary(X) ->
-%     X;
-% to_binary(X,Config) ->
-%     iolist_to_binary(to_string(X,Config)).
 
 to_binary(Key,Value,Config) ->
     iolist_to_binary(to_string(Key,Value,Config)).
@@ -347,29 +304,6 @@ format_mfa({M,F,A},Config) when is_atom(M), is_atom(F), is_list(A) ->
 format_mfa(MFA,Config) ->
     to_string(MFA,Config).
 
-%%====================================================================
-%% Internal functions
-%%====================================================================
-% -spec apply_defaults(FConfig) -> logger:formatter_config() when
-%       FConfig :: logger:formatter_config().
-% apply_defaults(FConfig) ->
-%     maps:merge(
-%       #{term_depth => undefined,
-%         map_depth => -1,
-%         time_offset => 0,
-%         time_designator => $T
-%        },
-%       FConfig
-%     ).
-
-% -spec format_msg(Msg, Meta, Config) -> unicode:chardata() when
-%       Msg :: map(),
-%       Meta :: map(),
-%       Config :: config().
-% format_msg(Msg, Meta, Config) ->
-%     Data = logger_formatter_json_datadog:format_msg(Msg, Meta, Config),
-%     thoas:encode(Data).
-
 %% Ensure that all valid configuration parameters exist in the final
 %% configuration map
 -spec add_default_config(Config) -> logger:formatter_config() when
@@ -442,9 +376,117 @@ get_utc_config() ->
 -spec check_config(Config) -> ok | {error,term()} when
       Config :: config().
 check_config(Config) when is_map(Config) ->
+    do_check_config(maps:to_list(Config));
+check_config(Config) ->
+    {error,{invalid_formatter_config,?MODULE,Config}}.
+
+do_check_config([{Type,L}|Config]) when Type == chars_limit;
+                                        Type == depth;
+                                        Type == max_size ->
+    case check_limit(L) of
+        ok -> do_check_config(Config);
+        error -> {error,{invalid_formatter_config,?MODULE,{Type,L}}}
+    end;
+do_check_config([{single_line,SL}|Config]) when is_boolean(SL) ->
+    do_check_config(Config);
+do_check_config([{legacy_header,LH}|Config]) when is_boolean(LH) ->
+    do_check_config(Config);
+do_check_config([{error_logger_notice_header,ELNH}|Config]) when ELNH == info;
+                                                                 ELNH == notice ->
+    do_check_config(Config);
+do_check_config([{report_cb,RCB}|Config]) when is_function(RCB,1);
+                                               is_function(RCB,2) ->
+    do_check_config(Config);
+do_check_config([{template,T}|Config]) ->
+    case check_template(T) of
+        ok -> do_check_config(Config);
+        error -> {error,{invalid_formatter_template,?MODULE,T}}
+    end;
+do_check_config([{time_offset,Offset}|Config]) ->
+    case check_offset(Offset) of
+        ok ->
+            do_check_config(Config);
+        error ->
+            {error,{invalid_formatter_config,?MODULE,{time_offset,Offset}}}
+    end;
+do_check_config([{time_designator,Char}|Config]) when Char>=0, Char=<255 ->
+    case io_lib:printable_latin1_list([Char]) of
+        true ->
+            do_check_config(Config);
+        false ->
+            {error,{invalid_formatter_config,?MODULE,{time_designator,Char}}}
+    end;
+do_check_config([C|_]) ->
+    {error,{invalid_formatter_config,?MODULE,C}};
+do_check_config([]) ->
     ok.
 
+check_limit(L) when is_integer(L), L>0 ->
+    ok;
+check_limit(unlimited) ->
+    ok;
+check_limit(_) ->
+    error.
 
+check_template([Key|T]) when is_atom(Key) ->
+    check_template(T);
+check_template([Key|T]) when is_list(Key), is_atom(hd(Key)) ->
+    case lists:all(fun(X) when is_atom(X) -> true;
+                      (_) -> false
+                   end,
+                   Key) of
+        true ->
+            check_template(T);
+        false ->
+            error
+    end;
+check_template([{Key,IfExist,Else}|T])
+  when is_atom(Key) orelse
+       (is_list(Key) andalso is_atom(hd(Key))) ->
+    case check_template(IfExist) of
+        ok ->
+            case check_template(Else) of
+                ok ->
+                    check_template(T);
+                error ->
+                    error
+            end;
+        error ->
+            error
+    end;
+check_template([Str|T]) when is_list(Str) ->
+    case io_lib:printable_unicode_list(Str) of
+        true -> check_template(T);
+        false -> error
+    end;
+check_template([Bin|T]) when is_binary(Bin) ->
+    case unicode:characters_to_list(Bin) of
+        Str when is_list(Str) -> check_template([Str|T]);
+        _Error -> error
+    end;
+check_template([]) ->
+    ok;
+check_template(_) ->
+    error.
+
+check_offset(I) when is_integer(I) ->
+    ok;
+check_offset(Tz) when Tz=:=""; Tz=:="Z"; Tz=:="z" ->
+    ok;
+check_offset([Sign|Tz]) when Sign=:=$+; Sign=:=$- ->
+    check_timezone(Tz);
+check_offset(_) ->
+    error.
+
+check_timezone(Tz) ->
+    try io_lib:fread("~d:~d", Tz) of
+        {ok, [_, _], []} ->
+            ok;
+        _ ->
+            error
+    catch _:_ ->
+            error
+    end.
 
 p(#{single_line:=Single}) ->
     p(Single);
