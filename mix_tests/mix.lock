@@ -1,0 +1,3 @@
+%{
+  "thoas": {:hex, :thoas, "0.4.0", "86a72ccdc5ec388a13f9f843bcd6c1076640233b95440e47ffb8e3c0dbdb5a17", [:rebar3], [], "hexpm", "442296847aca11db8d25180693d7ca3073d6d7179f66952f07b16415306513b6"},
+}
