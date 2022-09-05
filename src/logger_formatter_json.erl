@@ -18,6 +18,7 @@
 -type config() :: #{chars_limit     => pos_integer() | unlimited,
                     depth           => pos_integer() | unlimited,
                     max_size        => pos_integer() | unlimited,
+                    names           => map() | [map()],
                     report_cb       => logger:report_cb(),
                     single_line     => boolean(),
                     template        => template(),
@@ -52,21 +53,23 @@ format(#{level:=Level,msg:=Msg0,meta:=Meta},Config0)
   when is_map(Config0) ->
     Config = add_default_config(Config0),
     Template = maps:get(template,Config),
-    {BT,AT0} = lists:splitwith(fun(msg) -> false; ({msg, _}) -> false; (_) -> true end, Template),
-    {KeyOut,AT} =
+    {BT,AT0} = lists:splitwith(fun(msg) -> false; (_) -> true end, Template),
+    {DoMsg,AT} =
         case AT0 of
-            [{msg,KeyOut0}|Rest] ->
-                {KeyOut0,Rest};
-            [msg|Rest] ->
-                {msg,Rest}
+            [msg|Rest] -> {true,Rest};
+            _ ->{false,AT0}
         end,
     MsgResult =
-        case format_msg(Msg0,Meta,Config) of
-            Msg when is_map(Msg) ->
-                maps:to_list(Msg);
-            Msg ->
-                {KeyOut, iolist_to_binary(Msg)}
-            end,
+        if DoMsg ->
+            case format_msg(Msg0,Meta,Config) of
+                Msg when is_map(Msg) ->
+                    maps:to_list(Msg);
+                Msg ->
+                    {map_name(msg,Config), iolist_to_binary(Msg)}
+                end;
+            true ->
+               []
+        end,
     Result0 = [
         do_format(Level,Meta,BT,Config),
         MsgResult,
@@ -75,14 +78,16 @@ format(#{level:=Level,msg:=Msg0,meta:=Meta},Config0)
     Result = lists:flatten(Result0),
     [thoas:encode_to_iodata(Result), "\n"].
 
+-spec map_name(Key, Config) -> atom() when
+      Key :: atom(),
+      Config :: config().
+map_name(Key, Config) ->
+    Names = maps:get(names, Config),
+    maps:get(Key, Names, Key).
 
-do_format(Level,Data,[Key|Format],Config) when is_atom(Key) ->
-    do_format(Level,Data,[{Key,Key}|Format],Config);
-do_format(Level,Data,[{Key,IfExist,Else}|Format],Config) when is_atom(Key) ->
-    do_format(Level,Data,[{{Key,Key},IfExist,Else}|Format],Config);
-do_format(Level,Data,[{level,KeyOut}|Format],Config) ->
-    [{KeyOut,to_binary(level,Level,Config)}|do_format(Level,Data,Format,Config)];
-do_format(Level,Data,[{{Key,KeyOut},IfExist,Else}|Format],Config) ->
+do_format(Level,Data,[level|Format],Config) ->
+    [{map_name(level,Config),to_binary(level,Level,Config)}|do_format(Level,Data,Format,Config)];
+do_format(Level,Data,[{Key,IfExist,Else}|Format],Config) ->
     String0 =
         case value(Key,Data) of
             {ok,Value} -> do_format(Level,Data#{Key=>Value},IfExist,Config);
@@ -92,9 +97,9 @@ do_format(Level,Data,[{{Key,KeyOut},IfExist,Else}|Format],Config) ->
         [] ->
             do_format(Level,Data,Format,Config);
         String ->
-            [{KeyOut,String}|do_format(Level,Data,Format,Config)]
+            [{map_name(Key,Config),String}|do_format(Level,Data,Format,Config)]
     end;
-do_format(Level,Data,[{Key,KeyOut}|Format],Config)
+do_format(Level,Data,[Key|Format],Config)
   when is_atom(Key) orelse
        (is_list(Key) andalso is_atom(hd(Key))) ->
     String0 =
@@ -106,7 +111,7 @@ do_format(Level,Data,[{Key,KeyOut}|Format],Config)
         [] ->
             do_format(Level,Data,Format,Config);
         String ->
-            [{KeyOut,String}|do_format(Level,Data,Format,Config)]
+            [{map_name(Key,Config),String}|do_format(Level,Data,Format,Config)]
     end;
 do_format(Level,Data,[Str|Format],Config) ->
     [Str|do_format(Level,Data,Format,Config)];
@@ -255,47 +260,6 @@ chardata_to_list(Chardata) ->
             throw(Error)
     end.
 
-truncate(B,Msg,A,unlimited) ->
-    [B,Msg,A];
-truncate(B,Msg,A,Size) ->
-    String = [B,Msg,A],
-    Length = io_lib:chars_length(String),
-    if Length>Size ->
-            {Last,FlatString} =
-                case A of
-                    [] ->
-                        case Msg of
-                            [] ->
-                                {get_last(B),lists:flatten(B)};
-                            _ ->
-                                {get_last(Msg),lists:flatten([B,Msg])}
-                        end;
-                    _ ->
-                        {get_last(A),lists:flatten(String)}
-                end,
-            case Last of
-                $\n->
-                    lists:sublist(FlatString,1,Size-4)++"...\n";
-                _ ->
-                    lists:sublist(FlatString,1,Size-3)++"..."
-            end;
-       true ->
-            String
-    end.
-
-get_last(L) ->
-    get_first(lists:reverse(L)).
-
-get_first([]) ->
-    error;
-get_first([C|_]) when is_integer(C) ->
-    C;
-get_first([L|Rest]) when is_list(L) ->
-    case get_last(L) of
-        error -> get_first(Rest);
-        First -> First
-    end.
-
 %% SysTime is the system time in microseconds
 format_time(SysTime,#{time_offset:=Offset,time_designator:=Des})
   when is_integer(SysTime) ->
@@ -316,7 +280,7 @@ format_mfa(MFA,Config) ->
 
 %% Ensure that all valid configuration parameters exist in the final
 %% configuration map
--spec add_default_config(Config) -> logger:formatter_config() when
+-spec add_default_config(Config) -> config() when
       Config :: logger:formatter_config().
 add_default_config(Config0) ->
     Default =
@@ -328,8 +292,10 @@ add_default_config(Config0) ->
     MaxSize = get_max_size(maps:get(max_size,Config0,undefined)),
     Depth = get_depth(maps:get(depth,Config0,undefined)),
     Offset = get_offset(maps:get(time_offset,Config0,undefined)),
+    Names = get_names(maps:get(names,Config0,#{})),
     add_default_template(maps:merge(Default,Config0#{max_size=>MaxSize,
                                                      depth=>Depth,
+                                                     names=>Names,
                                                      time_offset=>Offset})).
 
 add_default_template(#{template:=_}=Config) ->
@@ -339,22 +305,15 @@ add_default_template(Config) ->
 
 default_template(_) ->
     [
-        {time, "syslog.timestamp"},
-        % {level, "syslog.severity"},
-        % https://docs.datadoghq.com/logs/log_configuration/processors/
-        {level, "status"},
-        {msg, message},
-        % https://docs.datadoghq.com/logs/log_configuration/attributes_naming_convention/#source-code
-        % error.kind	string	The error type or kind (or code in some cases).
-        % error.message	string	A concise, human-readable, one-line message explaining the event.
-        % error.stack	string	The stack trace or the complementary information about the error.
-        {file, "logger.file_name"},
-        line,
-        {mfa, "logger.method_name"},
-        {pid, "logger.thread_name"},
-        {trace_id, "dd.trace_id"},
-        {span_id, "dd.span_id"}
-
+     time,
+     level,
+     msg,
+     file,
+     line,
+     mfa,
+     pid,
+     trace_id,
+     span_id
     ].
 
 get_max_size(undefined) ->
@@ -366,6 +325,35 @@ get_depth(undefined) ->
     error_logger:get_format_depth();
 get_depth(S) ->
     max(5,S).
+
+get_names(Names) when is_list(Names) ->
+    lists:foldl(fun(M, Acc) -> maps:merge(Acc, default_names(M)) end, #{}, Names);
+get_names(Names) ->
+    default_names(Names).
+
+-spec default_names(Names) -> map() when
+      Names :: atom() | map().
+default_names(Names) when is_map(Names) ->
+    Names;
+default_names(datadog) ->
+    % https://docs.datadoghq.com/logs/log_configuration/attributes_naming_convention/#source-code
+    #{
+      time => <<"syslog.timestamp">>,
+      % https://docs.datadoghq.com/logs/log_configuration/processors/
+      % level => <<"syslog.severity">>,
+      level => <<"status">>,
+      msg => <<"message">>,
+      % error.kind	string	The error type or kind (or code in some cases).
+      % error.message	string	A concise, human-readable, one-line message explaining the event.
+      % error.stack	string	The stack trace or the complementary information about the error.
+      file => <<"logger.file_name">>,
+      mfa => <<"logger.method_name">>,
+      pid => <<"logger.thread_name">>,
+      trace_id => <<"dd.trace_id">>,
+      span_id => <<"dd.span_id">>
+    };
+default_names(undefined) ->
+    #{}.
 
 get_offset(undefined) ->
     utc_to_offset(get_utc_config());
@@ -446,8 +434,6 @@ check_limit(_) ->
 
 check_template([Key|T]) when is_atom(Key) ->
     check_template(T);
-check_template([{Key,_KeyOut}|T]) when is_atom(Key) ->
-    check_template(T);
 check_template([Key|T]) when is_list(Key), is_atom(hd(Key)) ->
     case lists:all(fun(X) when is_atom(X) -> true;
                       (_) -> false
@@ -458,10 +444,6 @@ check_template([Key|T]) when is_list(Key), is_atom(hd(Key)) ->
         false ->
             error
     end;
-check_template([{{Key,KeyOut},IfExist,Else}|T])
-  when is_atom(Key) orelse
-       (is_list(Key) andalso is_atom(hd(Key))) ->
-    check_template([{Key,IfExist,Else}|T]);
 check_template([{Key,IfExist,Else}|T])
   when is_atom(Key) orelse
        (is_list(Key) andalso is_atom(hd(Key))) ->
