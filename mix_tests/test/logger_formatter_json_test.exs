@@ -3,29 +3,29 @@ defmodule LoggerFormatterJsonTest do
 
   describe "Unstructured log messages" do
     test "String with a charlist" do
-       expected = ~s({"level":"info","msg":"abc"}\n)
+       expected = ~s({"msg":"abc","level":"info"}\n)
        assert expected == to_string(:logger_formatter_json.format(%{level: :info, msg: {:string, 'abc'}, meta: %{}}, %{}))
     end
 
     test "String with a binary" do
-       expected = ~s({"level":"info","msg":"abc"}\n)
+       expected = ~s({"msg":"abc","level":"info"}\n)
        assert expected == to_string(:logger_formatter_json.format(%{level: :info, msg: {:string, "abc"}, meta: %{}}, %{}))
     end
 
     test "List of charlists" do
-       expected = ~s({"level":"info","msg":"abc"}\n)
+       expected = ~s({"msg":"abc","level":"info"}\n)
        assert expected == to_string(:logger_formatter_json.format(%{level: :info, msg: {:string, ['abc']}, meta: %{}}, %{}))
     end
 
     test "Erlang format string and args" do
-       expected = ~s({"level":"info","msg":"hello world"}\n)
+       expected = ~s({"msg":"hello world","level":"info"}\n)
        assert expected == to_string(:logger_formatter_json.format(%{level: :info, msg: {'hello ~s', ['world']}, meta: %{}}, %{}))
     end
   end
 
   describe "Structured log messages" do
     test "Simple map" do
-       expected = ~s({"level":"info","hi":"there"}\n)
+       expected = ~s({"hi":"there","level":"info"}\n)
        assert expected == to_string(:logger_formatter_json.format(%{level: :info, msg: {:report, %{hi: :there}}, meta: %{}}, %{}))
     end
   end

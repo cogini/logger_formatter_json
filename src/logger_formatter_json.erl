@@ -85,6 +85,9 @@ map_name(Key, Config) ->
     Names = maps:get(names, Config),
     maps:get(Key, Names, Key).
 
+do_format(Level,Data0,[all|_Format],Config) ->
+    Data = maps:put(level,Level,Data0),
+    lists:map(fun({K,V}) -> {map_name(K,Config), to_binary(K,V,Config)} end, maps:to_list(Data));
 do_format(Level,Data,[level|Format],Config) ->
     [{map_name(level,Config),to_binary(level,Level,Config)}|do_format(Level,Data,Format,Config)];
 do_format(Level,Data,[{Key,IfExist,Else}|Format],Config) ->
@@ -304,17 +307,20 @@ add_default_template(Config) ->
     Config#{template=>default_template(Config)}.
 
 default_template(_) ->
-    [
-     time,
-     level,
-     msg,
-     file,
-     line,
-     mfa,
-     pid,
-     trace_id,
-     span_id
-    ].
+    [msg,all].
+
+% default_template(_) ->
+%     [
+%      time,
+%      level,
+%      msg,
+%      file,
+%      line,
+%      mfa,
+%      pid,
+%      trace_id,
+%      span_id
+%     ].
 
 get_max_size(undefined) ->
     unlimited;

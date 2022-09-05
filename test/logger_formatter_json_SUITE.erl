@@ -11,13 +11,13 @@ unstructured() ->
     [{docs, "logs that aren't structured get passed through with a re-frame"}].
 unstructured(_) ->
     ?assertEqual(
-       <<"{\"level\":\"info\",\"msg\":\"abc\"}\n">>,
+       <<"{\"msg\":\"abc\",\"level\":\"info\"}\n">>,
        iolist_to_binary(
          logger_formatter_json:format(#{level => info, msg => {string, "abc"},
                                         meta => #{}}, #{}))
       ),
     ?assertEqual(
-       <<"{\"level\":\"info\",\"msg\":\"abc\"}\n">>,
+       <<"{\"msg\":\"abc\",\"level\":\"info\"}\n">>,
        iolist_to_binary(
          logger_formatter_json:format(#{level => info,
                                         msg => {string, [<<"abc">>]},
@@ -25,7 +25,7 @@ unstructured(_) ->
         )
       ),
     ?assertEqual(
-       <<"{\"level\":\"info\",\"msg\":\"hello world\"}\n">>,
+       <<"{\"msg\":\"hello world\",\"level\":\"info\"}\n">>,
        iolist_to_binary(
          logger_formatter_json:format(#{level => info,
                                         msg => {"hello ~s", ["world"]},
@@ -36,7 +36,7 @@ unstructured(_) ->
 
 structured(_) ->
     ?assertEqual(
-       <<"{\"level\":\"info\",\"hi\":\"there\"}\n">>,
+       <<"{\"hi\":\"there\",\"level\":\"info\"}\n">>,
        iolist_to_binary(
          logger_formatter_json:format(#{level => info, msg => {report, #{hi => there}}, meta => #{}}, #{})
         )
@@ -48,7 +48,7 @@ metadata(_) ->
                names => datadog
               },
     ?assertEqual(
-       <<"{\"status\":\"info\",\"message\":\"abc\"}\n">>,
+       <<"{\"message\":\"abc\",\"status\":\"info\"}\n">>,
        iolist_to_binary(
          logger_formatter_json:format(#{level => info, msg => {string, "abc"},
                                         meta => #{}}, Config))
