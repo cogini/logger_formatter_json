@@ -419,6 +419,13 @@ do_check_config([{time_offset,Offset}|Config]) ->
         error ->
             {error,{invalid_formatter_config,?MODULE,{time_offset,Offset}}}
     end;
+do_check_config([{names,Names}|Config]) ->
+    case check_names(Names) of
+        ok ->
+            do_check_config(Config);
+        error ->
+            {error,{invalid_formatter_config,?MODULE,{names,Names}}}
+    end;
 do_check_config([{time_designator,Char}|Config]) when Char>=0, Char=<255 ->
     case io_lib:printable_latin1_list([Char]) of
         true ->
@@ -477,6 +484,20 @@ check_template([Bin|T]) when is_binary(Bin) ->
 check_template([]) ->
     ok;
 check_template(_) ->
+    error.
+
+check_names(Names) when is_atom(Names) ->
+    ok;
+check_names(Names) when is_map(Names) ->
+    ok;
+check_names(Names) when is_list(Names) ->
+    case lists:all(fun(N) -> is_atom(N) orelse is_map(N) end, Names) of
+        true ->
+            ok;
+        false ->
+            error
+    end;
+check_names(_) ->
     error.
 
 check_offset(I) when is_integer(I) ->
