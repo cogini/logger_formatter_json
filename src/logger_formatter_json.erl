@@ -344,9 +344,10 @@ default_names(Names) when is_map(Names) ->
 default_names(datadog) ->
     % https://docs.datadoghq.com/logs/log_configuration/attributes_naming_convention/#source-code
     #{
-      time => <<"syslog.timestamp">>,
-      % https://docs.datadoghq.com/logs/log_configuration/processors/
       % level => <<"syslog.severity">>,
+      % time => <<"syslog.timestamp">>,
+      % https://docs.datadoghq.com/logs/log_configuration/processors/
+      time => <<"date">>,
       level => <<"status">>,
       msg => <<"message">>,
       % error.kind	string	The error type or kind (or code in some cases).
