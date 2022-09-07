@@ -96,6 +96,10 @@ map_type(Key, Config) ->
 do_format(Level,Data0,[all|_Format],Config) ->
     Data = maps:put(level,Level,Data0),
     lists:map(fun({K,V}) -> {map_name(K,Config), to_binary(K,V,Config)} end, maps:to_list(Data));
+do_format(Level,Data0,[{group, Key, Keys}|Format],Config) ->
+    Data = maps:with(Keys, Data0),
+    Data1 = lists:map(fun({K,V}) -> {map_name([Key, K],Config), to_binary(K,V,Config)} end, maps:to_list(Data)),
+    [{map_name(Key,Config),Data1}|do_format(Level,Data0,Format,Config)];
 do_format(Level,Data,[level|Format],Config) ->
     [{map_name(level,Config),to_binary(map_type(level, Config),Level,Config)}|do_format(Level,Data,Format,Config)];
 do_format(Level,Data,[{Key,IfExist,Else}|Format],Config) ->
@@ -141,7 +145,6 @@ value(_,_) ->
 to_binary(Key,Value,Config) ->
     iolist_to_binary(to_string(Key,Value,Config)).
 
-%% system_time is the system time in microseconds
 to_string({level, OutputFormat}, Value, Config) ->
     format_level(OutputFormat, Value, Config);
 to_string(system_time,Value,Config) ->
@@ -321,32 +324,33 @@ add_default_config(Config0) ->
     Offset = get_offset(maps:get(time_offset,Config0,undefined)),
     Names = get_names(maps:get(names,Config0,#{})),
     Types = get_types(maps:get(types,Config0,#{})),
-    add_default_template(maps:merge(Default,Config0#{max_size=>MaxSize,
-                                                     depth=>Depth,
-                                                     names=>Names,
-                                                     types=>Types,
-                                                     time_offset=>Offset})).
+    Template = expand_templates(maps:get(template,Config0,[all_template])),
+    maps:merge(Default,Config0#{max_size=>MaxSize,
+                                depth=>Depth,
+                                names=>Names,
+                                types=>Types,
+                                template=>Template,
+                                time_offset=>Offset}).
 
-add_default_template(#{template:=_}=Config) ->
-    Config;
-add_default_template(Config) ->
-    Config#{template=>default_template(Config)}.
+expand_templates(Templates0) ->
+    Templates1 = lists:map(fun default_template/1, Templates0),
+    lists:flatten(Templates1).
 
-default_template(_) ->
-    [msg,all].
-
-% default_template(_) ->
-%     [
-%      time,
-%      level,
-%      msg,
-%      file,
-%      line,
-%      mfa,
-%      pid,
-%      trace_id,
-%      span_id
-%     ].
+default_template(all_template) ->
+    [msg, all];
+default_template(default_template) ->
+    [time, level, msg, file, line, mfa, pid, trace_id, span_id];
+default_template(gcp_template) ->
+    [
+     msg,
+     time,
+     level,
+     trace_id,
+     span_id,
+     {group, source_location, [file, line, mfa]}
+    ];
+default_template(Value) ->
+    Value.
 
 get_max_size(undefined) ->
     unlimited;
@@ -385,6 +389,20 @@ default_names(datadog) ->
       % error.kind	string	The error type or kind (or code in some cases).
       % error.message	string	A concise, human-readable, one-line message explaining the event.
       % error.stack	string	The stack trace or the complementary information about the error.
+    };
+default_names(gcp) ->
+    % https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry
+    % TODO: this is incomplete
+    #{
+      time => <<"timestamp">>,
+      level => <<"severity">>,
+      msg => <<"textPayload">>,
+      trace_id => <<"trace">>,
+      span_id => <<"spanId">>,
+      source_location => <<"sourceLocation">>,
+      [source_location, file] => <<"file">>,
+      [source_location, line] => <<"line">>,
+      [source_location, mfa] => <<"function">>
     };
 default_names(undefined) ->
     #{}.
