@@ -1,7 +1,7 @@
 %% @doc
-%% This module is a formatter for the Erlang logger library which outputs JSON.
-%%
+%% Formatter for the Erlang logger library which outputs JSON.
 %% https://www.erlang.org/doc/apps/kernel/logger_chapter.html#formatters
+%%
 %% @end
 %%
 -module(logger_formatter_json).
@@ -19,6 +19,7 @@
                     depth           => pos_integer() | unlimited,
                     max_size        => pos_integer() | unlimited,
                     names           => map() | [map()],
+                    types           => map() | [map()],
                     report_cb       => logger:report_cb(),
                     single_line     => boolean(),
                     template        => template(),
@@ -85,11 +86,18 @@ map_name(Key, Config) ->
     Names = maps:get(names, Config),
     maps:get(Key, Names, Key).
 
+-spec map_type(Key, Config) -> atom() | {atom(), atom()} when
+      Key :: atom(),
+      Config :: config().
+map_type(Key, Config) ->
+    Types = maps:get(types, Config),
+    maps:get(Key, Types, Key).
+
 do_format(Level,Data0,[all|_Format],Config) ->
     Data = maps:put(level,Level,Data0),
     lists:map(fun({K,V}) -> {map_name(K,Config), to_binary(K,V,Config)} end, maps:to_list(Data));
 do_format(Level,Data,[level|Format],Config) ->
-    [{map_name(level,Config),to_binary(level,Level,Config)}|do_format(Level,Data,Format,Config)];
+    [{map_name(level,Config),to_binary(map_type(level, Config),Level,Config)}|do_format(Level,Data,Format,Config)];
 do_format(Level,Data,[{Key,IfExist,Else}|Format],Config) ->
     String0 =
         case value(Key,Data) of
@@ -107,7 +115,7 @@ do_format(Level,Data,[Key|Format],Config)
        (is_list(Key) andalso is_atom(hd(Key))) ->
     String0 =
         case value(Key,Data) of
-            {ok,Value} -> to_binary(Key,Value,Config);
+            {ok,Value} -> to_binary(map_type(Key, Config),Value,Config);
             error -> []
         end,
     case String0 of
@@ -133,12 +141,15 @@ value(_,_) ->
 to_binary(Key,Value,Config) ->
     iolist_to_binary(to_string(Key,Value,Config)).
 
-to_string(time,Time,Config) ->
-    format_time(Time,Config);
-to_string(mfa,MFA,Config) ->
-    format_mfa(MFA,Config);
-to_string(initial_call,MFA,Config) ->
-    format_mfa(MFA,Config);
+%% system_time is the system time in microseconds
+to_string({level, OutputFormat}, Value, Config) ->
+    format_level(OutputFormat, Value, Config);
+to_string(system_time,Value,Config) ->
+    format_time(Value,Config);
+% to_string({system_time, OutputFormat},Value,Config) ->
+%     format_time(OutputFormat, Value,Config);
+to_string(mfa,Value,Config) ->
+    format_mfa(Value,Config);
 % to_string(crash_reason,Value,Config) ->
 %     format_crash_reason(Value,Config);
 to_string(_,Value,Config) ->
@@ -263,9 +274,22 @@ chardata_to_list(Chardata) ->
             throw(Error)
     end.
 
+
+% https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#LogSeverity
+format_level(gcp, emergency, _Config) -> <<"EMERGENCY">>;
+format_level(gcp, alert, _Config) -> <<"ALERT">>;
+format_level(gcp, critical, _Config) -> <<"CRITICAL">>;
+format_level(gcp, error, _Config) -> <<"ERROR">>;
+format_level(gcp, warning, _Config) -> <<"WARNING">>;
+format_level(gcp, notice, _Config) -> <<"INFO">>;
+format_level(gcp, info, _Config) -> <<"INFO">>;
+format_level(gcp, debug, _Config) -> <<"DEBUG">>;
+format_level(gcp, _, _Config) -> <<"DEFAULT">>.
+
 %% SysTime is the system time in microseconds
-format_time(SysTime,#{time_offset:=Offset,time_designator:=Des})
+format_time(SysTime, Config)
   when is_integer(SysTime) ->
+    #{time_offset:=Offset,time_designator:=Des} = Config,
     calendar:system_time_to_rfc3339(SysTime,[{unit,microsecond},
                                              {offset,Offset},
                                              {time_designator,Des}]).
@@ -296,9 +320,11 @@ add_default_config(Config0) ->
     Depth = get_depth(maps:get(depth,Config0,undefined)),
     Offset = get_offset(maps:get(time_offset,Config0,undefined)),
     Names = get_names(maps:get(names,Config0,#{})),
+    Types = get_types(maps:get(types,Config0,#{})),
     add_default_template(maps:merge(Default,Config0#{max_size=>MaxSize,
                                                      depth=>Depth,
                                                      names=>Names,
+                                                     types=>Types,
                                                      time_offset=>Offset})).
 
 add_default_template(#{template:=_}=Config) ->
@@ -342,24 +368,49 @@ get_names(Names) ->
 default_names(Names) when is_map(Names) ->
     Names;
 default_names(datadog) ->
+    % https://docs.datadoghq.com/logs/log_configuration/processors/
     % https://docs.datadoghq.com/logs/log_configuration/attributes_naming_convention/#source-code
+    % https://docs.datadoghq.com/tracing/faq/why-cant-i-see-my-correlated-logs-in-the-trace-id-panel/?tab=jsonlogs
     #{
-      % level => <<"syslog.severity">>,
-      % time => <<"syslog.timestamp">>,
-      % https://docs.datadoghq.com/logs/log_configuration/processors/
       time => <<"date">>,
       level => <<"status">>,
       msg => <<"message">>,
+      trace_id => <<"dd.trace_id">>,
+      span_id => <<"dd.span_id">>,
+      % level => <<"syslog.severity">>,
+      % time => <<"syslog.timestamp">>,
+      file => <<"logger.file_name">>,
+      mfa => <<"logger.method_name">>,
+      pid => <<"logger.thread_name">>
       % error.kind	string	The error type or kind (or code in some cases).
       % error.message	string	A concise, human-readable, one-line message explaining the event.
       % error.stack	string	The stack trace or the complementary information about the error.
-      file => <<"logger.file_name">>,
-      mfa => <<"logger.method_name">>,
-      pid => <<"logger.thread_name">>,
-      trace_id => <<"dd.trace_id">>,
-      span_id => <<"dd.span_id">>
     };
 default_names(undefined) ->
+    #{}.
+
+
+get_types(Types) when is_list(Types) ->
+    Defaults = #{
+      time => system_time,
+      level => level,
+      mfa => mfa,
+      initial_call => mfa
+    },
+    lists:foldl(fun(M, Acc) -> maps:merge(Acc, default_types(M)) end, Defaults, Types);
+get_types(Types) ->
+    default_types(Types).
+
+-spec default_types(Types) -> map() when
+      Types :: atom() | map().
+default_types(Types) when is_map(Types) ->
+    Types;
+default_types(gcp) ->
+    % https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#LogSeverity
+    #{
+      level => {level, gcp}
+    };
+default_types(undefined) ->
     #{}.
 
 get_offset(undefined) ->
@@ -426,6 +477,13 @@ do_check_config([{names,Names}|Config]) ->
             do_check_config(Config);
         error ->
             {error,{invalid_formatter_config,?MODULE,{names,Names}}}
+    end;
+do_check_config([{types,Names}|Config]) ->
+    case check_types(Names) of
+        ok ->
+            do_check_config(Config);
+        error ->
+            {error,{invalid_formatter_config,?MODULE,{types,Names}}}
     end;
 do_check_config([{time_designator,Char}|Config]) when Char>=0, Char=<255 ->
     case io_lib:printable_latin1_list([Char]) of
@@ -499,6 +557,20 @@ check_names(Names) when is_list(Names) ->
             error
     end;
 check_names(_) ->
+    error.
+
+check_types(Types) when is_atom(Types) ->
+    ok;
+check_types(Types) when is_map(Types) ->
+    ok;
+check_types(Types) when is_list(Types) ->
+    case lists:all(fun(N) -> is_atom(N) orelse is_map(N) end, Types) of
+        true ->
+            ok;
+        false ->
+            error
+    end;
+check_types(_) ->
     error.
 
 check_offset(I) when is_integer(I) ->
