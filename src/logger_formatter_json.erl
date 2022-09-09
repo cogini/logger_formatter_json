@@ -29,7 +29,7 @@
       time_designator => byte(),
       time_offset => integer() | [byte()]}.
 -type template() ::
-    [metakey() | {metakey(), template(), template()} | unicode:chardata()].
+    [metakey() | {metakey(), template(), template()} | {group, metakey(), atom(), [atom()]} | {group, metakey(), atom(), [atom()], map()}].
 -type metakey() :: atom() | [atom()].
 
 % -type log_event() :: #{level:=level(),
@@ -92,11 +92,10 @@ format(#{level := Level,
     Result = lists:flatten(Result0),
     [thoas:encode_to_iodata(Result), "\n"].
 
--spec map_name(Key, Config) -> atom()
+-spec map_name(Key, Config) -> atom() | binary()
     when Key :: atom(),
          Config :: config().
-map_name(Key, Config) ->
-    Names = maps:get(names, Config),
+map_name(Key, #{names := Names}) ->
     maps:get(Key, Names, Key).
 
 -spec map_type(Key, Config) -> atom() | {atom(), atom()}
@@ -105,10 +104,11 @@ map_name(Key, Config) ->
 map_type(Key, #{types := Types}) ->
     maps:get(Key, Types, Key).
 
--spec do_format(Level, Data, Template, Seen, Config) -> {atom() | binary(), binary()}
+
+-spec do_format(Level, Data, Template, Seen, Config) -> [{atom() | binary(), binary()}]
     when Level :: atom(),
          Data :: map(),
-         Template :: atom(),
+         Template :: template(),
          Seen :: [atom() | [atom()]],
          Config :: config().
 do_format(Level, Data0, [all | _Format], _Seen, Config) ->
@@ -117,17 +117,13 @@ do_format(Level, Data0, [all | _Format], _Seen, Config) ->
               maps:to_list(Data));
 do_format(Level, Data0, [rest | _Format], Seen, Config) ->
     Data1 = maps:put(level, Level, Data0),
-    Data =
-        maps:without(
-            lists:flatten(Seen), Data1),
+    Data = maps:without(lists:flatten(Seen), Data1),
     lists:map(fun({K, V}) -> {map_name(K, Config), to_binary(K, V, Config)} end,
               maps:to_list(Data));
 do_format(Level, Data0, [{group, Key, Keys} | Format], Seen, Config) ->
     do_format(Level, Data0, [{group, Key, Keys, #{}} | Format], Seen, Config);
 do_format(Level, Data0, [{group, Key, Keys, GroupTypes} | Format], Seen, Config) ->
-    Types =
-        maps:merge(
-            maps:get(types, Config), GroupTypes),
+    Types = maps:merge(maps:get(types, Config), GroupTypes),
     Data = maps:with(Keys, Data0),
     Data1 =
         lists:map(fun({K, V}) -> {maps:get(K, Types, K), to_binary(K, V, Config)} end,
@@ -377,8 +373,8 @@ format_mfa(MFA, Config) ->
 add_default_config(Config0) ->
     Default =
         #{chars_limit => unlimited,
-          error_logger_notice_header => info,
-          legacy_header => false,
+          % error_logger_notice_header => info,
+          % legacy_header => false,
           single_line => true,
           time_designator => $T},
     MaxSize = get_max_size(maps:get(max_size, Config0, undefined)),
@@ -528,9 +524,9 @@ do_check_config([{single_line, SL} | Config]) when is_boolean(SL) ->
     do_check_config(Config);
 do_check_config([{legacy_header, LH} | Config]) when is_boolean(LH) ->
     do_check_config(Config);
-do_check_config([{error_logger_notice_header, ELNH} | Config])
-    when ELNH == info; ELNH == notice ->
-    do_check_config(Config);
+% do_check_config([{error_logger_notice_header, ELNH} | Config])
+%     when ELNH == info; ELNH == notice ->
+%     do_check_config(Config);
 do_check_config([{report_cb, RCB} | Config])
     when is_function(RCB, 1); is_function(RCB, 2) ->
     do_check_config(Config);
