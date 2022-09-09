@@ -2,10 +2,11 @@ defmodule LoggerFormatterJsonTests.MixProject do
   use Mix.Project
 
   @version "0.1.0"
+  @app :logger_formatter_json_tests
 
   def project do
     [
-      app: :logger_formatter_json_tests,
+      app: @app,
       version: @version,
       elixir: "~> 1.13",
       start_permanent: Mix.env() == :prod,
@@ -14,14 +15,25 @@ defmodule LoggerFormatterJsonTests.MixProject do
     ]
   end
 
-  # Run "mix help compile.app" to learn about applications.
+  # Configuration for the OTP application.
+  #
+  # Type `mix help compile.app` for more information.
   def application do
     [
-      extra_applications: []
+      mod: {LoggerFormatterJsonTests.Application, []},
+      extra_applications:
+        [:logger, :runtime_tools] ++
+          extra_applications(Mix.env())
     ]
   end
 
-  # Run "mix help deps" to learn about dependencies.
+  def extra_applications(:test), do: [:tools]
+  def extra_applications(:dev), do: [:tools]
+  def extra_applications(_), do: []
+
+  # Specifies your project dependencies.
+  #
+  # Type `mix help deps` for examples and options.
   defp deps do
     [
       {:logger_formatter_json, path: "../"},
