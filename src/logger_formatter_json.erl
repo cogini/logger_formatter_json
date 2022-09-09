@@ -362,7 +362,7 @@ default_template({template, gcp}) ->
      trace_id,
      span_id,
      {group, source_location, [file, line, mfa]},
-     {group, tags, [rest]},
+     {group, tags, [rest]}
     ];
 default_template(Value) ->
     Value.
