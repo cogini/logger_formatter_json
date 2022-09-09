@@ -72,9 +72,9 @@ format(#{level:=Level,msg:=Msg0,meta:=Meta},Config0)
                []
         end,
     Result0 = [
-        do_format(Level,Meta,BT,Config),
+        do_format(Level,Meta,BT,[],Config),
         MsgResult,
-        do_format(Level,Meta,AT,Config)
+        do_format(Level,Meta,AT,[],Config)
     ],
     Result = lists:flatten(Result0),
     [thoas:encode_to_iodata(Result), "\n"].
@@ -89,32 +89,44 @@ map_name(Key, Config) ->
 -spec map_type(Key, Config) -> atom() | {atom(), atom()} when
       Key :: atom(),
       Config :: config().
-map_type(Key, Config) ->
-    Types = maps:get(types, Config),
+map_type(Key, #{types := Types}) ->
     maps:get(Key, Types, Key).
 
-do_format(Level,Data0,[all|_Format],Config) ->
+-spec do_format(Level, Data, Template, Seen, Config) -> {atom() | binary(), binary()} when
+      Level :: atom(),
+      Data :: map(),
+      Template :: atom(),
+      Seen :: [atom() | [atom()]],
+      Config :: config().
+do_format(Level,Data0,[all|_Format],_Seen,Config) ->
     Data = maps:put(level,Level,Data0),
     lists:map(fun({K,V}) -> {map_name(K,Config), to_binary(K,V,Config)} end, maps:to_list(Data));
-do_format(Level,Data0,[{group, Key, Keys}|Format],Config) ->
+do_format(Level,Data0,[rest|_Format],Seen,Config) ->
+    Data1 = maps:put(level,Level,Data0),
+    Data = maps:without(lists:flatten(Seen), Data1),
+    lists:map(fun({K,V}) -> {map_name(K,Config), to_binary(K,V,Config)} end, maps:to_list(Data));
+do_format(Level,Data0,[{group, Key, Keys}|Format],Seen,Config) ->
+    do_format(Level,Data0,[{group, Key, Keys, #{}}|Format],Seen,Config);
+do_format(Level,Data0,[{group, Key, Keys, GroupTypes}|Format],Seen,Config) ->
+    Types = maps:merge(maps:get(types, Config), GroupTypes),
     Data = maps:with(Keys, Data0),
-    Data1 = lists:map(fun({K,V}) -> {map_name([Key, K],Config), to_binary(K,V,Config)} end, maps:to_list(Data)),
-    [{map_name(Key,Config),Data1}|do_format(Level,Data0,Format,Config)];
-do_format(Level,Data,[level|Format],Config) ->
-    [{map_name(level,Config),to_binary(map_type(level, Config),Level,Config)}|do_format(Level,Data,Format,Config)];
-do_format(Level,Data,[{Key,IfExist,Else}|Format],Config) ->
+    Data1 = lists:map(fun({K,V}) -> {maps:get(K, Types, K), to_binary(K,V,Config)} end, maps:to_list(Data)),
+    [{map_name(Key,Config),Data1}|do_format(Level,Data0,Format,[Keys | Seen], Config)];
+do_format(Level,Data,[level|Format],Seen, Config) ->
+    [{map_name(level,Config),to_binary(map_type(level, Config),Level,Config)}|do_format(Level,Data,Format,[level | Seen], Config)];
+do_format(Level,Data,[{Key,IfExist,Else}|Format],Seen, Config) ->
     String0 =
         case value(Key,Data) of
-            {ok,Value} -> do_format(Level,Data#{Key=>Value},IfExist,Config);
-            error -> do_format(Level,Data,Else,Config)
+            {ok,Value} -> do_format(Level,Data#{Key=>Value},IfExist,Seen,Config);
+            error -> do_format(Level,Data,Else,[Key | Seen],Config)
         end,
     case String0 of
         [] ->
-            do_format(Level,Data,Format,Config);
+            do_format(Level,Data,Format,Seen,Config);
         String ->
-            [{map_name(Key,Config),String}|do_format(Level,Data,Format,Config)]
+            [{map_name(Key,Config),String}|do_format(Level,Data,Format,Seen,Config)]
     end;
-do_format(Level,Data,[Key|Format],Config)
+do_format(Level,Data,[Key|Format],Seen,Config)
   when is_atom(Key) orelse
        (is_list(Key) andalso is_atom(hd(Key))) ->
     String0 =
@@ -124,13 +136,13 @@ do_format(Level,Data,[Key|Format],Config)
         end,
     case String0 of
         [] ->
-            do_format(Level,Data,Format,Config);
+            do_format(Level,Data,Format,[Key | Seen], Config);
         String ->
-            [{map_name(Key,Config),String}|do_format(Level,Data,Format,Config)]
+            [{map_name(Key,Config),String}|do_format(Level,Data,Format,[Key | Seen],Config)]
     end;
-do_format(Level,Data,[Str|Format],Config) ->
-    [Str|do_format(Level,Data,Format,Config)];
-do_format(_Level,_Data,[],_Config) ->
+% do_format(Level,Data,[Str|Format],Config) ->
+%     [Str|do_format(Level,Data,Format,Config)];
+do_format(_Level,_Data,[],_Seen,_Config) ->
     [].
 
 value(Key,Meta) when is_map_key(Key,Meta) ->
@@ -324,7 +336,7 @@ add_default_config(Config0) ->
     Offset = get_offset(maps:get(time_offset,Config0,undefined)),
     Names = get_names(maps:get(names,Config0,#{})),
     Types = get_types(maps:get(types,Config0,#{})),
-    Template = expand_templates(maps:get(template,Config0,[all_template])),
+    Template = expand_templates(maps:get(template,Config0,[{template, all}])),
     maps:merge(Default,Config0#{max_size=>MaxSize,
                                 depth=>Depth,
                                 names=>Names,
@@ -336,18 +348,21 @@ expand_templates(Templates0) ->
     Templates1 = lists:map(fun default_template/1, Templates0),
     lists:flatten(Templates1).
 
-default_template(all_template) ->
+default_template({template, all}) ->
     [msg, all];
-default_template(default_template) ->
-    [time, level, msg, file, line, mfa, pid, trace_id, span_id];
-default_template(gcp_template) ->
+default_template({template, basic}) ->
+    [time, level, msg];
+default_template({template, trace}) ->
+    [trace_id, span_id];
+default_template({template, gcp}) ->
     [
      msg,
      time,
      level,
      trace_id,
      span_id,
-     {group, source_location, [file, line, mfa]}
+     {group, source_location, [file, line, mfa]},
+     {group, tags, [rest]},
     ];
 default_template(Value) ->
     Value.
