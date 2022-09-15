@@ -25,6 +25,7 @@ release:
 
 For Elixir, configre the default logger in `config/config.exs` file:
 
+```elixir
 if System.get_env("RELEASE_MODE") do
   config :kernel, :logger, [
     {:handler, :default, :logger_std_h,
@@ -33,6 +34,7 @@ if System.get_env("RELEASE_MODE") do
      }}
   ]
 end
+```
 
 with options:
 
