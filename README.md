@@ -2,16 +2,17 @@
 
 A formatter for the Erlang logger application that outputs JSON.
 
-It formats log messages and logger metadata as JSON.
-It maps metadata names according naming conventions used by services such as
-[Datadog](https://www.erlang.org/doc/man/logger_formatter.html) or
-[Google Cloud](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#LogSeverity)
-
 It is a standard [formatter](https://www.erlang.org/doc/apps/kernel/logger_chapter.html#formatters)
 for the high-performance `logger` application introduced in OTP 21.
 
-It supports Erlang and other languages such as Elixir.
+It formats log messages and logger metadata as JSON, mapping
+metadata names according naming conventions used by services such as
+[Datadog](https://www.erlang.org/doc/man/logger_formatter.html) or
+[Google Cloud](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#LogSeverity)
 
+It is written in Erlang with no dependencies except for the JSON library
+[thoas](https://github.com/lpil/thoas). It can be used by pure Erlang projects,
+as well as other BEAM languages such as Elixir.
 
 ## Installation
 
@@ -37,8 +38,8 @@ end
 
 ## Usage
 
-This logger is normally configured as part of the production release,
-making it the default for all applications running on the VM.
+The formatter is normally configured as part of the production release, making
+it the default for all applications running on the VM.
 
 ### Erlang
 
@@ -59,9 +60,9 @@ Configure the kernel default handler in the `sys.config` file for the release:
 
 ## Elixir
 
-The Elixir logging system is brought up after the kernel logger, so
-setting it as part of the release runtime is the most reliable way of
-getting everything to use JSON output.
+The Elixir logging system is brought up after the kernel logger, so setting it
+as part of the release runtime is the most reliable way of getting everything
+to use JSON output.
 
 Configure the kernel default logger in `config/config.exs`:
 
@@ -131,11 +132,11 @@ config :foo, :logger, [
 
 `names`: Mapping from the key in the metadata map to a string key used in the JSON output.
 
-The module has predefined keys for `datadog` and `gcp`. You can also specify
-a list of options, e.g. `[datadog, %{foo: "bar"}]`.
+The module has predefined keys for `datadog` and `gcp`. You can also specify a
+list of options, e.g. `[datadog, %{foo: "bar"}]`.
 
-`types`: Mapping from the key in the metadata map to a special type that the module knows how to format
-(`level`, `system_time`, `mfa`).
+`types`: Mapping from the key in the metadata map to a special type that the
+module knows how to format (`level`, `system_time`, `mfa`).
 
 `template`: List of metadata to format.
 
@@ -161,15 +162,16 @@ A few keys are special:
 
 * `msg` represents the text message, if any.
 
-If you call `logger:info("the message")`, then it would be rendered in the JSON as
-`{"msg": "the message", ...}`. You can map the key `msg` to e.g. `message` via
-the `names` config option.
+If you call `logger:info("the message")`, then it would be rendered in the JSON
+as `{"msg": "the message", ...}`. You can map the key `msg` to e.g. `message`
+via the `names` config option.
 
 * `all` represents all the metadata keys.
 * `rest` represents all the metadata keys which have not been handled explicitly.
 
-You can specify a group of keys as a tuple with `{group, `<key>`, [<list of
-metadata keys>]}, and they will be collected into a map in the output.
+You can specify a group of keys as a tuple with
+`{group, `<key>`, [<list of metadata keys>]}, and they will be collected into a
+map in the output.
 
 For example:
 
@@ -216,7 +218,7 @@ rebar3 compile
 rebar3 ct
 ```
 
-There are also tests written in Elixir. Change to the `mix_tests` directory.
+There are also tests written in Elixir. Change to the `mix_tests` directory and run:
 
 ```console
 mix deps.get
@@ -225,7 +227,7 @@ mix test
 
 ## Format code
 
-To run the code formatter on Erlang 25:
+To run the code formatter on OTP 25:
 
 ```console
 ERL_FLAGS="-enable-feature all" rebar3 format
