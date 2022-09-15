@@ -21,7 +21,7 @@
     #{chars_limit => pos_integer() | unlimited,
       depth => pos_integer() | unlimited,
       max_size => pos_integer() | unlimited,
-      names => map() | [map()],
+      names => map() | atom() | [atom() | map()],
       types => map() | [map()],
       report_cb => logger:report_cb(),
       single_line => boolean(),
@@ -31,20 +31,6 @@
 -type template() ::
     [metakey() | {metakey(), template(), template()} | {group, metakey(), atom(), [atom()]} | {group, metakey(), atom(), [atom()], map()}].
 -type metakey() :: atom() | [atom()].
-
-% -type log_event() :: #{level:=level(),
-%                        msg:={io:format(),[term()]} | {report,report()} | {string,unicode:chardata()},
-%                        meta:=metadata()}.
-%
-% -type metadata() :: #{pid    => pid(),
-%                       gl     => pid(),
-%                       time   => timestamp(),
-%                       mfa    => {module(),atom(),non_neg_integer()},
-%                       file   => file:filename(),
-%                       line   => non_neg_integer(),
-%                       domain => [atom()],
-%                       report_cb => report_cb(),
-%                       atom() => term()}.
 
 -define(IS_STRING(String), is_list(String) orelse is_binary(String)).
 
@@ -380,9 +366,9 @@ add_default_config(Config0) ->
     MaxSize = get_max_size(maps:get(max_size, Config0, undefined)),
     Depth = get_depth(maps:get(depth, Config0, undefined)),
     Offset = get_offset(maps:get(time_offset, Config0, undefined)),
-    Names = get_names(maps:get(names, Config0, #{})),
-    Types = get_types(maps:get(types, Config0, #{})),
-    Template = expand_templates(maps:get(template, Config0, [{template, all}])),
+    Names = get_names(maps:get(names, Config0, undefined)),
+    Types = get_types(maps:get(types, Config0, undefined)),
+    Template = expand_templates(maps:get(template, Config0, [{keys, all}])),
     maps:merge(Default,
                Config0#{max_size => MaxSize,
                         depth => Depth,
@@ -395,13 +381,13 @@ expand_templates(Templates0) ->
     Templates1 = lists:map(fun default_template/1, Templates0),
     lists:flatten(Templates1).
 
-default_template({template, all}) ->
+default_template({keys, all}) ->
     [msg, all];
-default_template({template, basic}) ->
+default_template({keys, basic}) ->
     [time, level, msg];
-default_template({template, trace}) ->
+default_template({keys, trace}) ->
     [trace_id, span_id];
-default_template({template, gcp}) ->
+default_template({keys, gcp}) ->
     [msg,
      time,
      level,
@@ -422,12 +408,15 @@ get_depth(undefined) ->
 get_depth(S) ->
     max(5, S).
 
+-spec get_names(Names) -> map() when
+      Names :: atom() | map() | [atom() | map()].
 get_names(Names) when is_list(Names) ->
     lists:foldl(fun(M, Acc) -> maps:merge(Acc, default_names(M)) end, #{}, Names);
 get_names(Names) ->
     default_names(Names).
 
--spec default_names(Names) -> map() when Names :: atom() | map().
+-spec default_names(Names) -> map() when
+      Names :: atom() | map().
 default_names(Names) when is_map(Names) ->
     Names;
 default_names(datadog) ->
@@ -459,9 +448,11 @@ default_names(gcp) ->
       [source_location, file] => <<"file">>,
       [source_location, line] => <<"line">>,
       [source_location, mfa] => <<"function">>};
-default_names(undefined) ->
+default_names(_) ->
     #{}.
 
+-spec get_types(Names) -> map() when
+      Names :: atom() | map() | [atom() | map()].
 get_types(Types) when is_list(Types) ->
     Defaults =
         #{time => system_time,
@@ -472,13 +463,19 @@ get_types(Types) when is_list(Types) ->
 get_types(Types) ->
     default_types(Types).
 
--spec default_types(Types) -> map() when Types :: atom() | map().
+-spec default_types(Types) -> map() when
+      Types :: atom() | map().
 default_types(Types) when is_map(Types) ->
     Types;
+default_types(undefined) ->
+    #{time => system_time,
+      level => level,
+      mfa => mfa,
+      initial_call => mfa};
 default_types(gcp) ->
     % https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#LogSeverity
     #{level => {level, gcp}};
-default_types(undefined) ->
+default_types(_) ->
     #{}.
 
 get_offset(undefined) ->
@@ -624,12 +621,16 @@ check_template([]) ->
 check_template(_) ->
     error.
 
-check_names(Names) when is_atom(Names) ->
+check_names(datadog) ->
     ok;
+check_names(gcp) ->
+    ok;
+check_names(Names) when is_atom(Names) ->
+    error;
 check_names(Names) when is_map(Names) ->
     ok;
 check_names(Names) when is_list(Names) ->
-    case lists:all(fun(N) -> is_atom(N) orelse is_map(N) end, Names) of
+    case lists:all(fun(N) -> check_names(N) == ok end, Names) of
         true ->
             ok;
         false ->
@@ -638,12 +639,14 @@ check_names(Names) when is_list(Names) ->
 check_names(_) ->
     error.
 
-check_types(Types) when is_atom(Types) ->
+check_types(gcp) ->
     ok;
+check_types(Types) when is_atom(Types) ->
+    error;
 check_types(Types) when is_map(Types) ->
     ok;
 check_types(Types) when is_list(Types) ->
-    case lists:all(fun(N) -> is_atom(N) orelse is_map(N) end, Types) of
+    case lists:all(fun(N) -> check_types(N) == ok end, Types) of
         true ->
             ok;
         false ->
