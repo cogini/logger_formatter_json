@@ -2,8 +2,8 @@
 
 A formatter for the Erlang logger application that outputs JSON.
 
-It formats log messages and logger metadata in JSON format.
-It suports mapping metadata keys to match naming conventions used by services such as
+It formats log messages and logger metadata as JSON.
+It maps metadata names according naming conventions used by services such as
 [Datadog](https://www.erlang.org/doc/man/logger_formatter.html) or
 [Google Cloud](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#LogSeverity)
 
@@ -12,12 +12,8 @@ for the high-performance `logger` application introduced in OTP 21.
 
 It supports Erlang and other languages such as Elixir.
 
-This module is based on the default [logger_formatter](https://www.erlang.org/doc/man/logger_formatter.html)
-module in OTP.
 
 ## Installation
-
-This module is available in hex:
 
 ## Erlang
 
@@ -41,8 +37,8 @@ end
 
 ## Usage
 
-This logger is normally configured as part of the production release.
-That makes it the default for all applications running on the VM.
+This logger is normally configured as part of the production release,
+making it the default for all applications running on the VM.
 
 ### Erlang
 
