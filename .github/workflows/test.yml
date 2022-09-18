@@ -7,21 +7,51 @@ on:
 name: Test
 jobs:
   test:
-    runs-on: ubuntu-latest
     name: Tests
+    runs-on: ubuntu-latest
+
     env:
       MIX_ENV: test
+
     steps:
-      - uses: actions/checkout@v2
-      - uses: erlef/setup-beam@v1
+    - name: Cancel previous runs
+      uses: styfle/cancel-workflow-action@0.5.0
+      with:
+        access_token: ${{ github.token }}
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup Elixir
+        uses: erlef/setup-beam@v1
         with:
           otp-version: "24.2"
           elixir-version: "1.13.4"
 
-      - run: rebar3 eunit
+      - name: Retrieve cached dependencies
+        id: mix-cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            _build
+          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-mix-
 
-      - run: mix deps.get
-        working-directory: mix_tests
+      - name: Run Erlang tests
+        run: rebar3 eunit
 
-      - run: mix test
+      - name: Install Elixir test dependencies
         working-directory: mix_tests
+        run: |
+          mix local.rebar --force
+          mix local.hex --force
+          mix deps.get
+
+      - name: Run Elixir tests
+        working-directory: mix_tests
+        run: mix test
+
+      - name: Run static code analysis tools
+        run: |
+          rebar3 dialyzer
