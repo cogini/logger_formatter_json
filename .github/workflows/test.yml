@@ -14,10 +14,10 @@ jobs:
       MIX_ENV: test
 
     steps:
-    - name: Cancel previous runs
-      uses: styfle/cancel-workflow-action@0.5.0
-      with:
-        access_token: ${{ github.token }}
+      - name: Cancel previous runs
+        uses: styfle/cancel-workflow-action@0.5.0
+        with:
+          access_token: ${{ github.token }}
 
       - name: Checkout code
         uses: actions/checkout@v2
