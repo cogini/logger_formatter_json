@@ -1,3 +1,5 @@
+![test workflow](https://github.com/reachfh/logger_formatter_json/actions/workflows/test.yml/badge.svg)
+
 # logger_formatter_json
 
 A formatter for the Erlang logger application that outputs JSON.
