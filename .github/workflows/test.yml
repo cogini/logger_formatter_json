@@ -1,10 +1,10 @@
 ---
+name: Test
 on:
   push:
     branches:
       - "main"
   pull_request:
-name: Test
 jobs:
   test:
     name: Tests
@@ -29,7 +29,6 @@ jobs:
           elixir-version: "1.13.4"
 
       - name: Retrieve cached dependencies
-        id: mix-cache
         uses: actions/cache@v2
         with:
           path: |
@@ -38,8 +37,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-mix-
 
+      - name: Check formatting
+        run: rebar3 steamroll --check
+
       - name: Run Erlang tests
-        run: rebar3 eunit
+        run: rebar3 ct
 
       - name: Install Elixir test dependencies
         working-directory: mix_tests
