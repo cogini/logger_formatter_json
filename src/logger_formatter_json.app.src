@@ -9,6 +9,18 @@
     {env, []},
     {modules, []},
     {licenses, ["Apache 2.0"]},
-    {links, [{"Github", "https://github.com/cogini/logger_formatter_json/"}]}
+    {links, [{"Github", "https://github.com/cogini/logger_formatter_json/"}]},
+    {
+      files,
+      [
+        "src",
+        "rebar.config",
+        "rebar.lock",
+        "CHANGELOG.md",
+        "CODE_OF_CONDUCT.md",
+        "README.md",
+        "LICENSE"
+      ]
+    }
   ]
 }.
