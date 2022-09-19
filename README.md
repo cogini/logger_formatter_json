@@ -1,4 +1,5 @@
 ![test workflow](https://github.com/reachfh/logger_formatter_json/actions/workflows/test.yml/badge.svg)
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
 
 # logger_formatter_json
 
@@ -229,8 +230,10 @@ mix test
 
 ## Format code
 
-To run the code formatter on OTP 25:
-
 ```console
-ERL_FLAGS="-enable-feature all" rebar3 format
+rebar3 steamroll
 ```
+
+## Code of Conduct
+
+This project  Contributor Covenant version 2.1. Check [CODE_OF_CONDUCT.md](/CODE_OF_CONDUCT.md) file for more information.
