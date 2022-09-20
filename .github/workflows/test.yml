@@ -7,8 +7,12 @@ on:
   pull_request:
 jobs:
   test:
-    name: Tests
+    name: Run tests
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        otp: ['24.2', '25.0']
+        elixir: ['1.13.4', '1.14.0']
 
     env:
       MIX_ENV: test
@@ -22,11 +26,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Setup Elixir
+      - name: Setup Erlang and Elixir
         uses: erlef/setup-beam@v1
         with:
-          otp-version: "24.2"
-          elixir-version: "1.13.4"
+          otp-version: ${{matrix.otp}}
+          elixir-version: ${{matrix.elixir}}
 
       - name: Retrieve cached dependencies
         uses: actions/cache@v2
@@ -54,6 +58,6 @@ jobs:
         working-directory: mix_tests
         run: mix test
 
-      - name: Run static code analysis tools
+      - name: Run static code analysis checks
         run: |
           rebar3 dialyzer
