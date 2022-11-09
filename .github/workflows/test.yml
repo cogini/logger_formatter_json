@@ -19,21 +19,21 @@ jobs:
 
     steps:
       - name: Cancel previous runs
-        uses: styfle/cancel-workflow-action@0.5.0
+        uses: styfle/cancel-workflow-action@0.11.0
         with:
           access_token: ${{ github.token }}
 
-      - name: Checkout code
-        uses: actions/checkout@v2
+      - name: Check out source
+        uses: actions/checkout@v3
 
-      - name: Setup Erlang and Elixir
+      - name: Install Erlang and Elixir
         uses: erlef/setup-beam@v1
         with:
           otp-version: ${{matrix.otp}}
           elixir-version: ${{matrix.elixir}}
 
-      - name: Retrieve cached dependencies
-        uses: actions/cache@v2
+      - name: Retrieve cached deps
+        uses: actions/cache@v3
         with:
           path: |
             _build
@@ -47,17 +47,17 @@ jobs:
       - name: Run Erlang tests
         run: rebar3 ct
 
-      - name: Install Elixir test dependencies
+      - name: Install Elixir tools
         working-directory: mix_tests
-        run: |
-          mix local.rebar --force
-          mix local.hex --force
-          mix deps.get
+        run: mix do local.rebar --force, local.hex --force
+
+      - name: Get Elixir deps
+        working-directory: mix_tests
+        run: mix deps.get
 
       - name: Run Elixir tests
         working-directory: mix_tests
         run: mix test
 
       - name: Run static code analysis checks
-        run: |
-          rebar3 dialyzer
+        run: rebar3 dialyzer
