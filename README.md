@@ -3,23 +3,22 @@
 
 # logger_formatter_json
 
-A formatter for the Erlang logger application that outputs JSON.
+This is a formatter for the Erlang logger application that outputs JSON.
 
-It is a standard [formatter](https://www.erlang.org/doc/apps/kernel/logger_chapter.html#formatters)
-for the high-performance `logger` application introduced in OTP 21.
+It implements the [formatter](https://www.erlang.org/doc/apps/kernel/logger_chapter.html#formatters)
+API for the high-performance `logger` application introduced in OTP 21.
 
-It formats log messages and logger metadata as JSON, mapping
-metadata names according naming conventions used by services such as
-[Datadog](https://www.erlang.org/doc/man/logger_formatter.html) and
+It formats log messages and logger metadata as JSON, supporting
+naming conventions from services such as [Datadog](https://www.erlang.org/doc/man/logger_formatter.html) and
 [Google Cloud](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#LogSeverity)
 
-It is written in Erlang with no dependencies except for the JSON library
-[thoas](https://github.com/lpil/thoas). It can be used by pure Erlang projects,
+It is written in Erlang with no dependencies except for the Erlang JSON library
+[thoas](https://github.com/lpil/thoas). It can be used by pure Erlang projects
 as well as other BEAM languages such as Elixir.
 
 ## Installation
 
-## Erlang
+Erlang:
 
 Add `logger_formatter_json` to the list of dependencies in `rebar.config`:
 
@@ -27,7 +26,7 @@ Add `logger_formatter_json` to the list of dependencies in `rebar.config`:
 {deps, [logger_formatter_json]}.
 ```
 
-## Elixir
+Elixir:
 
 Add `logger_formatter_json` to the list of dependencies in `mix.exs`:
 
@@ -42,15 +41,15 @@ end
 ## Usage
 
 JSON output is mostly useful for production, as it makes it easier for tools to
-parse log output. In development, a library like
-[flatlog](https://github.com/ferd/flatlog) produces output that is easier for
-humans to read.
+parse log output, but it can be excessively verbose for development. If you use
+a lot of metatadata, a library like [flatlog](https://github.com/ferd/flatlog)
+produces output that is easier for humans to read.
 
 In order to make all log output in consistent JSON format, including system
 messages, configure the formatter as the default for all applications running
 on the VM.
 
-### Erlang
+Erlang:
 
 Configure the kernel default handler in the `sys.config` file for the release:
 
@@ -67,13 +66,13 @@ Configure the kernel default handler in the `sys.config` file for the release:
 ].
 ```
 
-## Elixir
+Elixir:
 
-The Elixir logging system is brought up after the kernel logger, so setting it
-as part of the release runtime is the most reliable way of getting everything
-to use JSON output.
+The Elixir logging system starts after the kernel logger, so setting it as part
+of the release runtime is the most reliable way of getting everything to use
+JSON output.
 
-Configure the kernel default logger in `config/config.exs`:
+Configure the kernel default logger in `config/config.exs` or `config/runtime.exs`:
 
 ```elixir
 if System.get_env("RELEASE_MODE") do
@@ -86,8 +85,8 @@ if System.get_env("RELEASE_MODE") do
 end
 ```
 
-The check for the `RELEASE_MODE` environment variable makes the code
-only run when building a release.
+The check for the `RELEASE_MODE` environment variable makes the code only run
+when building a release.
 
 Set options for the Elixir logging system in `config/prod.exs`:
 
@@ -145,7 +144,7 @@ config :foo, :logger, [
 
 `names` is a map of keys in the metadata map to string keys in the JSON output.
 
-The module has predefined sets keys for `datadog` and `gcp`.
+The module has predefined sets of keys for `datadog` and `gcp`.
 
 ```elixir
 config :foo, :logger, [
@@ -163,7 +162,7 @@ You can also specify a list to add your own tags to the predefined ones, e.g.
 of options, e.g. `names: [datadog, %{foo: "bar"}]`.
 
 
-`types` is a map which identifies the data as something the module knows how to format specially
+`types` is a map which identifies keys with a special format that the module understands
 (`level`, `system_time`, `mfa`).
 
 
@@ -208,10 +207,11 @@ For example:
 {group, tags, [rest]}
 ```
 
-would result in:
+This would result in a log message like:
 
 ```json
 {
+    ...
     "source_location": {"file:" "mymodule.ex", "line": 17, "mfa": "mymodule:thefunction/1"},
     "tags": {"foo": "bar", "biz": "baz"}
 }
@@ -239,16 +239,28 @@ You can also use a tuple to specify a standard set of keys to be used:
 ]
 ```
 
-You can specify multple templates, so you can add your own metadata keys to one
+You can specify multiple templates, so you can add your own metadata keys to one
 of the standard templates, e.g. `[{keys, basic}, request_id, trace_id, span_id]`.
 
-## Build
+
+## Links
+
+Much thanks to Fred Hebert, as always.
+
+* [Erlang/OTP 21's new logger](https://ferd.ca/erlang-otp-21-s-new-logger.html)
+* [flatlog](https://github.com/ferd/flatlog)
+* [Canonical log lines](https://brandur.org/canonical-log-lines)
+
+
+## Contributing
+
+Build:
 
 ```console
 rebar3 compile
 ```
 
-## Test
+Test:
 
 ```console
 rebar3 ct
@@ -261,12 +273,16 @@ mix deps.get
 mix test
 ```
 
-## Format code
+Format code:
 
 ```console
 rebar3 steamroll
 ```
 
-## Code of Conduct
+Generate docs:
 
-This project  Contributor Covenant version 2.1. Check [CODE_OF_CONDUCT.md](/CODE_OF_CONDUCT.md) file for more information.
+```console
+rebar3 ex_docs
+```
+
+This project uses the Contributor Covenant version 2.1. Check [CODE_OF_CONDUCT.md](/CODE_OF_CONDUCT.md) for more information.
