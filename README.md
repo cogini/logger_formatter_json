@@ -223,6 +223,8 @@ You can also use a tuple to specify a standard set of keys to be used:
 
 `{keys, basic}`: `[time, level, msg]`
 
+`{keys, trace}`: `[trace_id, span_id]`
+
 `{keys, gcp}`:
 
 ```erlang
@@ -236,9 +238,6 @@ You can also use a tuple to specify a standard set of keys to be used:
     {group, tags, [rest]}
 ]
 ```
-
-`{keys, trace}`: `[trace_id, span_id]`
-
 
 You can specify multple templates, so you can add your own, e.g.
 `[{keys, basic}, request_id, trace_id, span_id]`.
