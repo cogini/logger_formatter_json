@@ -239,9 +239,8 @@ You can also use a tuple to specify a standard set of keys to be used:
 ]
 ```
 
-You can specify multple templates, so you can add your own, e.g.
-`[{keys, basic}, request_id, trace_id, span_id]`.
-
+You can specify multple templates, so you can add your own metadata keys to one
+of the standard templates, e.g. `[{keys, basic}, request_id, trace_id, span_id]`.
 
 ## Build
 
