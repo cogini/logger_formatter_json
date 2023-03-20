@@ -10,7 +10,7 @@ for the high-performance `logger` application introduced in OTP 21.
 
 It formats log messages and logger metadata as JSON, mapping
 metadata names according naming conventions used by services such as
-[Datadog](https://www.erlang.org/doc/man/logger_formatter.html) or
+[Datadog](https://www.erlang.org/doc/man/logger_formatter.html) and
 [Google Cloud](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#LogSeverity)
 
 It is written in Erlang with no dependencies except for the JSON library
@@ -41,8 +41,14 @@ end
 
 ## Usage
 
-The formatter is normally configured as part of the production release, making
-it the default for all applications running on the VM.
+JSON output is mostly useful for production, as it makes it easier for tools to
+parse log output. In development, a library like
+[flatlog](https://github.com/ferd/flatlog) produces output that is easier for
+humans to read.
+
+In order to make all log output in consistent JSON format, including system
+messages, configure the formatter as the default for all applications running
+on the VM.
 
 ### Erlang
 
@@ -94,8 +100,8 @@ config :logger, :console,
   metadata: [:time, :level, :file, :line, :mfa, :pid, :request_id, :trace_id, :span_id]
 ```
 
-It is also possible to configure the logger just for your application
-and environment.
+It is also possible to configure the logger just for your application and
+environment.
 
 Add a call to `:logger.add_handlers` in your application startup file, e.g.
 `lib/foo/application.ex`:
@@ -107,7 +113,7 @@ def start(_type, _args) do
 
 Then add the handler to `config/prod.exs`:
 
-```elxixir
+```elixir
 config :foo, :logger, [
   {:handler, :default, :logger_std_h,
    %{
@@ -121,7 +127,27 @@ config :foo, :logger, [
 
 The formatter accepts a map of options, e.g.:
 
-```elxixir
+```elixir
+config :foo, :logger, [
+  {:handler, :default, :logger_std_h,
+   %{
+     formatter:
+       {:logger_formatter_json, %{
+            names: %{
+                time: "date",
+                level: "status",
+                msg: "message"
+            }
+        }}
+   }}
+]
+```
+
+`names` is a map of keys in the metadata map to string keys in the JSON output.
+
+The module has predefined sets keys for `datadog` and `gcp`.
+
+```elixir
 config :foo, :logger, [
   {:handler, :default, :logger_std_h,
    %{
@@ -133,15 +159,16 @@ config :foo, :logger, [
 ]
 ```
 
-`names`: Mapping from the key in the metadata map to a string key used in the JSON output.
+You can also specify a list to add your own tags to the predefined ones, e.g.
+of options, e.g. `names: [datadog, %{foo: "bar"}]`.
 
-The module has predefined keys for `datadog` and `gcp`. You can also specify a
-list of options, e.g. `[datadog, %{foo: "bar"}]`.
 
-`types`: Mapping from the key in the metadata map to a special type that the
-module knows how to format (`level`, `system_time`, `mfa`).
+`types` is a map which identifies the data as something the module knows how to format specially
+(`level`, `system_time`, `mfa`).
 
-`template`: List of metadata to format.
+
+`template` is a list of metadata to format. This lets you put keys in specific order to
+make them easier to read in the output.
 
 For example:
 
@@ -159,9 +186,7 @@ template: [
 ]
 ```
 
-List elements are mostly keys in the metatada map.
-
-A few keys are special:
+List elements are metadata key names, with a few special keys:
 
 * `msg` represents the text message, if any.
 
@@ -172,8 +197,8 @@ via the `names` config option.
 * `all` represents all the metadata keys.
 * `rest` represents all the metadata keys which have not been handled explicitly.
 
-You can specify a group of keys as a tuple with
-`{group, `<key>`, [<list of metadata keys>]}, and they will be collected into a
+You can specify a group of keys as a tuple like
+`{group, <name>, [<list of metadata keys>]}`, and they will be collected into a
 map in the output.
 
 For example:
@@ -183,13 +208,23 @@ For example:
 {group, tags, [rest]}
 ```
 
+would result in:
+
+```json
+{
+    "source_location": {"file:" "mymodule.ex", "line": 17, "mfa": "mymodule:thefunction/1"},
+    "tags": {"foo": "bar", "biz": "baz"}
+}
+```
+
 The default template is `[msg, all]`.
 
-You can also use a tuple to specify a set of keys to be used:
+You can also use a tuple to specify a standard set of keys to be used:
 
 `{keys, basic}`: `[time, level, msg]`
 
-`{keys, gcp}`: `
+`{keys, gcp}`:
+
 ```erlang
 [
     msg,
