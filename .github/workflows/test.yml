@@ -31,6 +31,7 @@ jobs:
         with:
           otp-version: ${{matrix.otp}}
           elixir-version: ${{matrix.elixir}}
+          rebar3-version: '3.18.0'
 
       - name: Retrieve cached deps
         uses: actions/cache@v3
