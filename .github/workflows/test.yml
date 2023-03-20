@@ -10,6 +10,7 @@ jobs:
     name: Run tests
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         otp: ['24.3', '25.2']
         elixir: ['1.13.4', '1.14.3']
@@ -38,9 +39,9 @@ jobs:
         with:
           path: |
             _build
-          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+          key: ${{ matrix.otp }}-${{ matrix.elixir}}-${{ hashFiles('**/rebar.lock') }}
           restore-keys: |
-            ${{ runner.os }}-mix-
+            ${{ matrix.otp }}-${{ matrix.elixir }}-
 
       - name: Check formatting
         run: rebar3 steamroll --check
