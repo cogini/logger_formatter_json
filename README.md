@@ -269,7 +269,7 @@ rebar3 ct
 There are also tests written in Elixir. Change to the `mix_tests` directory and run:
 
 ```console
-mix deps.get
+MIX_ENV=test mix deps.get
 mix test
 ```
 
