@@ -68,8 +68,7 @@ format(#{level := Level, msg := Msg0, meta := Meta}, Config0) when is_map(Config
   Result0 =
     [do_format(Level, Meta, BT, [], Config), MsgResult, do_format(Level, Meta, AT, [], Config)],
   Result = lists:flatten(Result0),
-  [thoas:encode_to_iodata(Result), "\n"].
-
+  [thoas:encode_to_iodata(Result, #{escape => unicode}), "\n"].
 
 %% @doc Map metadata key to JSON output name
 -spec map_name(Key, Config) -> atom() | binary() when Key :: atom(), Config :: config().
