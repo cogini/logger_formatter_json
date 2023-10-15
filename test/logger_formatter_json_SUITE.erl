@@ -23,6 +23,18 @@ unstructured(_) ->
     )
   ),
   ?assertEqual(
+    <<"{\"msg\":\"793\\u00B5s\",\"level\":\"info\"}\n">>,
+    iolist_to_binary(
+      logger_formatter_json:format(#{level => info, msg => {string,[<<"793µs"/utf8>>]}, meta => #{}}, #{})
+    )
+  ),
+  ?assertEqual(
+    <<"{\"msg\":\"GET /phoenix/live_reload/socket/websocket - Sent 404 in 793\\u00B5s\",\"level\":\"info\"}\n">>,
+    iolist_to_binary(
+      logger_formatter_json:format(#{level => info, msg => {string,[[<<"GET">>,32,<<"/phoenix/live_reload/socket/websocket">>],<<" - ">>,<<"Sent">>,32,<<"404">>,<<" in ">>,<<"793µs"/utf8>>]}, meta => #{}}, #{})
+    )
+  ),
+  ?assertEqual(
     <<"{\"msg\":\"hello world\",\"level\":\"info\"}\n">>,
     iolist_to_binary(
       logger_formatter_json:format(
