@@ -71,9 +71,11 @@ format(#{level := Level, msg := Msg0, meta := Meta}, Config0) when is_map(Config
   [thoas:encode_to_iodata(Result), "\n"].
 
 
+%% @doc Map metadata key to JSON output name
 -spec map_name(Key, Config) -> atom() | binary() when Key :: atom(), Config :: config().
 map_name(Key, #{names := Names}) -> maps:get(Key, Names, Key).
 
+%% @doc Map metadata value to a different type
 -spec map_type(Key, Config) -> atom() | {atom(), atom()} when Key :: atom(), Config :: config().
 map_type(Key, #{types := Types}) -> maps:get(Key, Types, Key).
 
