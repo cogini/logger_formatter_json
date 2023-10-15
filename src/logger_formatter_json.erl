@@ -175,7 +175,7 @@ to_string(X, Config) -> io_lib:format(p(Config), [X]).
 
 
 printable_list([]) -> false;
-printable_list(X) -> io_lib:printable_list(X).
+printable_list(X) -> io_lib:printable_unicode_list(X).
 
 -spec format_msg(Msg, Meta, Config) ->
     binary() | map()
