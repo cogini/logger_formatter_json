@@ -260,7 +260,8 @@ format_msg({Format0, Args}, Depth, Opts, Single) ->
   try
     Format1 = io_lib:scan_format(Format0, Args),
     Format = reformat(Format1, Depth, Single),
-    io_lib:build_text(Format, Opts)
+    BuildText = io_lib:build_text(Format, Opts),
+    unicode:characters_to_binary(BuildText)
   catch
     C:R : S ->
       P = p(Single),
