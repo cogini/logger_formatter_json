@@ -253,6 +253,7 @@ format_msg(Msg, _Meta, #{depth := Depth, chars_limit := CharsLimit, single_line 
   format_msg(Msg, Depth, Opts, Single).
 
 
+-spec chars_limit_to_opts(CharsLimit :: unlimited | non_neg_integer()) -> proplists:proplist().
 chars_limit_to_opts(unlimited) -> [];
 chars_limit_to_opts(CharsLimit) -> [{chars_limit, CharsLimit}].
 
