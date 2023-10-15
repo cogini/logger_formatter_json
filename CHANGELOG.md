@@ -7,3 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.7.0] - 2023-03-20
 ### Added
 - Initial version
+
+## [0.7.1] - 2023-10-15
+### Fixed
+- Handle log messages with Unicode
