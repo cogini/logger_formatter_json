@@ -70,11 +70,12 @@ format(#{level := Level, msg := Msg0, meta := Meta}, Config0) when is_map(Config
   Result = lists:flatten(Result0),
   [thoas:encode_to_iodata(Result, #{escape => unicode}), "\n"].
 
-%% @doc Map metadata key to JSON output name
+
+% @doc Map metadata key to JSON output name
 -spec map_name(Key, Config) -> atom() | binary() when Key :: atom(), Config :: config().
 map_name(Key, #{names := Names}) -> maps:get(Key, Names, Key).
 
-%% @doc Map metadata value to a different type
+% @doc Map metadata value to a different type
 -spec map_type(Key, Config) -> atom() | {atom(), atom()} when Key :: atom(), Config :: config().
 map_type(Key, #{types := Types}) -> maps:get(Key, Types, Key).
 
@@ -177,10 +178,10 @@ printable_list([]) -> false;
 printable_list(X) -> io_lib:printable_unicode_list(X).
 
 -spec format_msg(Msg, Meta, Config) ->
-    binary() | map()
-      when Msg :: {io:format(), [term()]} | {report, logger:report()} | {string, unicode:chardata()},
-           Meta :: logger:metadata(),
-           Config :: config().
+  binary()
+  | map() when Msg :: {io:format(), [term()]}
+  | {report, logger:report()}
+  | {string, unicode:chardata()} , Meta :: logger:metadata() , Config :: config().
 format_msg({string, Chardata}, Meta, Config) -> format_msg({"~ts", [Chardata]}, Meta, Config);
 
 format_msg({report, _} = Msg, Meta, #{report_cb := Fun} = Config)
