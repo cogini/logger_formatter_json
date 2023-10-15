@@ -177,6 +177,11 @@ to_string(X, Config) -> io_lib:format(p(Config), [X]).
 printable_list([]) -> false;
 printable_list(X) -> io_lib:printable_list(X).
 
+-spec format_msg(Msg, Meta, Config) ->
+    binary() | map()
+      when Msg :: {io:format(), [term()]} | {report, logger:report()} | {string, unicode:chardata()},
+           Meta :: logger:metadata(),
+           Config :: config().
 format_msg({string, Chardata}, Meta, Config) -> format_msg({"~ts", [Chardata]}, Meta, Config);
 
 format_msg({report, _} = Msg, Meta, #{report_cb := Fun} = Config)
