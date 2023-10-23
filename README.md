@@ -68,11 +68,76 @@ Configure the kernel default handler in the `sys.config` file for the release:
 
 Elixir:
 
-The Elixir logging system starts after the kernel logger, so setting it as part
-of the release runtime is the most reliable way of getting everything to use
-JSON output.
+The Elixir logging system starts after the kernel logger, so it is tricky to configure.
 
-Configure the kernel default logger in `config/config.exs` or `config/runtime.exs`:
+Instead of configuring the logger in Elixir, we can override the default formatter in
+the Elixir application starts.
+
+In `config/prod.exs` or `config/runtime.exs`, define the formatter config:
+
+```elixir
+config :foo, :logger_formatter_config, {:logger_formatter_json, %{}}
+```
+
+or, with options (see below):
+
+```elixir
+config :foo, :logger_formatter_config, {:logger_formatter_json,
+ %{
+   template: [
+     :msg,
+     :time,
+     :level,
+     :file,
+     :line,
+     # :mfa,
+     :pid,
+     :request_id,
+     :trace_id,
+     :span_id
+   ]
+ }}
+```
+
+You can set more metadata options for the Elixir logging system in `config/prod.exs`:
+
+```elixir
+config :logger,
+  level: :info,
+  utc_log: true
+
+config :logger, :console,
+  metadata: [:time, :level, :file, :line, :mfa, :pid, :request_id, :trace_id, :span_id]
+```
+
+Next, in in your application startup file, e.g. `lib/foo/application.ex`, add a
+call to reconfigure the logger:
+
+```elixir
+def start(_type, _args) do
+  logger_formatter_config = Application.get_env(:foo, :logger_formatter_config)
+
+  if logger_formatter_config do
+    :logger.update_handler_config(:default, :formatter, logger_formatter_config)
+  end
+```
+
+If you want all the messages from the initial startup in JSON as well, you have to
+configure the logger as a VM arg for the release.
+
+In `rel/vm.args.eex`, set up the logger:
+
+```erlang
+-kernel logger '[{handler, default, logger_std_h, #{formatter => {logger_formatter_json, #{}}}}]'
+```
+or, with options:
+
+```erlang
+-kernel logger '[{handler, default, logger_std_h, #{formatter => {logger_formatter_json, #{template => [msg, time, level, file, line, mfa, pid, trace_id, span_id]}}}}]'
+```
+
+There used to be a way of doing this in Elixir, but it seems to have stopped working.
+In `config/prod.exs` or `config/runtime.exs`, define the formatter config:
 
 ```elixir
 if System.get_env("RELEASE_MODE") do
@@ -88,39 +153,6 @@ end
 The check for the `RELEASE_MODE` environment variable makes the code only run
 when building a release.
 
-Set options for the Elixir logging system in `config/prod.exs`:
-
-```elixir
-config :logger,
-  level: :info,
-  utc_log: true
-
-config :logger, :console,
-  metadata: [:time, :level, :file, :line, :mfa, :pid, :request_id, :trace_id, :span_id]
-```
-
-It is also possible to configure the logger just for your application and
-environment.
-
-Add a call to `:logger.add_handlers` in your application startup file, e.g.
-`lib/foo/application.ex`:
-
-```elixir
-def start(_type, _args) do
-    :logger.add_handlers(:foo)
-```
-
-Then add the handler to `config/prod.exs`:
-
-```elixir
-config :foo, :logger, [
-  {:handler, :default, :logger_std_h,
-   %{
-     formatter:
-       {:logger_formatter_json, %{}}
-   }}
-]
-```
 
 ## Configuration
 
@@ -161,10 +193,8 @@ config :foo, :logger, [
 You can also specify a list to add your own tags to the predefined ones, e.g.
 of options, e.g. `names: [datadog, %{foo: "bar"}]`.
 
-
 `types` is a map which identifies keys with a special format that the module understands
 (`level`, `system_time`, `mfa`).
-
 
 `template` is a list of metadata to format. This lets you put keys in specific order to
 make them easier to read in the output.
