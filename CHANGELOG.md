@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Handle log messages with Unicode
 
-## [0.7.2] - 2023-10-15
+## [0.7.2] - 2023-10-23
 ### Added
-- Improved docs for latest Elixir
+- Improved docs to cover latest Elixir
+- Updated test matrix for latest Elixir and OTP
