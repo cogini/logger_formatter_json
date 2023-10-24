@@ -3,12 +3,12 @@
   logger_formatter_json,
   [
     {description, "A formatter for the OTP logger application that outputs JSON"},
-    {vsn, "0.7.1"},
+    {vsn, "0.7.2"},
     {registered, []},
     {applications, [kernel, stdlib, thoas]},
     {env, []},
     {modules, []},
-    {licenses, ["Apache 2.0"]},
+    {licenses, ["Apache-2.0"]},
     {links, [{"Github", "https://github.com/cogini/logger_formatter_json/"}]},
     {
       files,
@@ -18,8 +18,9 @@
         "rebar.lock",
         "CHANGELOG.md",
         "CODE_OF_CONDUCT.md",
+        "CONTRIBUTING.md",
         "README.md",
-        "LICENSE"
+        "LICENSE.md"
       ]
     }
   ]
