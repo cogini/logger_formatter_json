@@ -38,16 +38,16 @@ def deps do
 end
 ```
 
-## Usage
+## Configuration
 
-JSON output is mostly useful for production, as it makes it easier for tools to
-parse log output, but it can be excessively verbose for development. If you use
-a lot of metatadata, a library like [flatlog](https://github.com/ferd/flatlog)
-produces output that is easier for humans to read.
+JSON output is useful for production, as it allows you parse and query
+log records to e.g. match on a particular user. It can be excessively verbose
+for development, however, so we stick with the normal Elixir logger for development.
+For Erlang, [flatlog](https://github.com/ferd/flatlog) is a similar user-friendly library.
 
 In order to make all log output in consistent JSON format, including system
-messages, configure the formatter as the default for all applications running
-on the VM.
+messages, we configure the formatter as the default for all applications
+running on the VM.
 
 Erlang:
 
@@ -68,10 +68,39 @@ Configure the kernel default handler in the `sys.config` file for the release:
 
 Elixir:
 
-The Elixir logging system starts after the kernel logger, so it is tricky to configure.
+As of Elixir 15, we can override the formatter for the default log handler
+easily. In `config/prod.exs` configure `:default_handler`:
 
-Instead of configuring the logger in Elixir, we can override the default formatter in
-the Elixir application starts.
+```elixir
+config :logger, :default_handler,
+  formatter: {:logger_formatter_json, %{}}
+```
+
+or, with options (see below):
+
+```elixir
+config :logger, :default_handler,
+  formatter: {
+    :logger_formatter_json,
+    %{
+      template: [
+        :msg,
+        :time,
+        :level,
+        :file,
+        :line,
+        # :mfa,
+        :pid,
+        :request_id,
+        :trace_id,
+        :span_id
+      ]
+    }
+  }
+```
+
+In older Elixir versions, it was tricky to configure the default handler from
+Elixir. Instead, we would reconfigure the default handler in the app startup.
 
 In `config/prod.exs` or `config/runtime.exs`, define the formatter config:
 
@@ -97,17 +126,6 @@ config :foo, :logger_formatter_config, {:logger_formatter_json,
      :span_id
    ]
  }}
-```
-
-You can set more metadata options for the Elixir logging system in `config/prod.exs`:
-
-```elixir
-config :logger,
-  level: :info,
-  utc_log: true
-
-config :logger, :console,
-  metadata: [:time, :level, :file, :line, :mfa, :pid, :request_id, :trace_id, :span_id]
 ```
 
 Next, in in your application startup file, e.g. `lib/foo/application.ex`, add a
@@ -136,8 +154,9 @@ or, with options:
 -kernel logger '[{handler, default, logger_std_h, #{formatter => {logger_formatter_json, #{template => [msg, time, level, file, line, mfa, pid, trace_id, span_id]}}}}]'
 ```
 
-There used to be a way of doing this in Elixir, but it seems to have stopped working.
-In `config/prod.exs` or `config/runtime.exs`, define the formatter config:
+There used to be a way of doing this in Elixir, but it seems to have stopped
+working. In `config/prod.exs` or `config/runtime.exs`, define the formatter
+config:
 
 ```elixir
 if System.get_env("RELEASE_MODE") do
@@ -154,7 +173,7 @@ The check for the `RELEASE_MODE` environment variable makes the code only run
 when building a release.
 
 
-## Configuration
+## Usage
 
 The formatter accepts a map of options, e.g.:
 
