@@ -41,7 +41,7 @@ end
 ## Configuration
 
 JSON output is useful for production, as it allows you parse and query
-log records to e.g. match on a particular user. It can be excessively verbose
+log records to, e.g., match on a particular user. It can be excessively verbose
 for development, however, so we stick with the normal Elixir logger for development.
 For Erlang, [flatlog](https://github.com/ferd/flatlog) is a similar user-friendly library.
 
@@ -128,7 +128,7 @@ config :foo, :logger_formatter_config, {:logger_formatter_json,
  }}
 ```
 
-Next, in in your application startup file, e.g. `lib/foo/application.ex`, add a
+Next, in in your application startup file, e.g., `lib/foo/application.ex`, add a
 call to reconfigure the logger:
 
 ```elixir
@@ -261,7 +261,7 @@ This would result in a log message like:
 ```json
 {
     ...
-    "source_location": {"file:" "mymodule.ex", "line": 17, "mfa": "mymodule:thefunction/1"},
+    "source_location": {"file": "mymodule.ex", "line": 17, "mfa": "mymodule:thefunction/1"},
     "tags": {"foo": "bar", "biz": "baz"}
 }
 ```
@@ -289,7 +289,7 @@ You can also use a tuple to specify a standard set of keys to be used:
 ```
 
 You can specify multiple templates, so you can add your own metadata keys to one
-of the standard templates, e.g. `[{keys, basic}, request_id, trace_id, span_id]`.
+of the standard templates, e.g., `[{keys, basic}, request_id, trace_id, span_id]`.
 
 
 ## Links
