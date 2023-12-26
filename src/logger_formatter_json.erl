@@ -171,6 +171,14 @@ to_string(X, Config) when is_list(X) ->
     _ -> io_lib:format(p(Config), [X])
   end;
 
+to_string(<<>>, _Config) -> <<>>;
+
+to_string(X, Config) when is_binary(X) ->
+    case re:run(X, <<"[:print]+">>, [{capture, none}, unicode]) of
+      match -> X;
+      _ -> io_lib:format(p(Config), [X])
+    end;
+
 to_string(X, Config) -> io_lib:format(p(Config), [X]).
 
 
