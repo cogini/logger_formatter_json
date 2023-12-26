@@ -95,16 +95,10 @@ unstructured(_) ->
     )
   ),
   ?assertEqual(
-    <<
-      "{\"msg\":\"hello world\",\"level\":\"info\",\"foo\":\"<<\\\"string with control char\\\\n\\\">>\"}\n"
-    >>,
+    <<"{\"msg\":\"hello world\",\"level\":\"info\",\"foo\":\"<<\\\"control char\\\\n\\\">>\"}\n">>,
     iolist_to_binary(
       logger_formatter_json:format(
-        #{
-          level => info,
-          msg => {"hello ~s", ["world"]},
-          meta => #{foo => <<"string with control char\n">>}
-        },
+        #{level => info, msg => {"hello ~s", ["world"]}, meta => #{foo => <<"control char\n">>}},
         #{}
       )
     )
