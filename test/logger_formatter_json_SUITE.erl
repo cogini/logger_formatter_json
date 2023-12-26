@@ -68,6 +68,57 @@ unstructured(_) ->
       )
     )
   ),
+  ?assertEqual(
+    <<"{\"msg\":\"hello world\",\"level\":\"info\",\"request_id\":\"F6R64Fh3F9NzEscAAAaB\"}\n">>,
+    iolist_to_binary(
+      logger_formatter_json:format(
+        #{
+          level => info,
+          msg => {"hello ~s", ["world"]},
+          meta => #{request_id => <<"F6R64Fh3F9NzEscAAAaB">>}
+        },
+        #{}
+      )
+    )
+  ),
+  ?assertEqual(
+    <<"{\"msg\":\"hello world\",\"level\":\"info\",\"request_id\":\"string with spaces\"}\n">>,
+    iolist_to_binary(
+      logger_formatter_json:format(
+        #{
+          level => info,
+          msg => {"hello ~s", ["world"]},
+          meta => #{request_id => <<"string with spaces">>}
+        },
+        #{}
+      )
+    )
+  ),
+  ?assertEqual(
+    <<
+      "{\"msg\":\"hello world\",\"level\":\"info\",\"foo\":\"<<\\\"string with control char\\\\n\\\">>\"}\n"
+    >>,
+    iolist_to_binary(
+      logger_formatter_json:format(
+        #{
+          level => info,
+          msg => {"hello ~s", ["world"]},
+          meta => #{foo => <<"string with control char\n">>}
+        },
+        #{}
+      )
+    )
+  ),
+  % Binary data
+  ?assertEqual(
+    <<"{\"msg\":\"hello world\",\"level\":\"info\",\"foo\":\"<<0,1,2,3>>\"}\n">>,
+    iolist_to_binary(
+      logger_formatter_json:format(
+        #{level => info, msg => {"hello ~s", ["world"]}, meta => #{foo => <<0, 1, 2, 3>>}},
+        #{}
+      )
+    )
+  ),
   ok.
 
 
