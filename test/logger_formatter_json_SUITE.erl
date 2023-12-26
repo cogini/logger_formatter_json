@@ -77,7 +77,7 @@ unstructured(_) ->
           msg => {"hello ~s", ["world"]},
           meta => #{request_id => <<"F6R64Fh3F9NzEscAAAaB">>}
         },
-        #{}
+        #{template => [msg, level, rest]}
       )
     )
   ),
@@ -90,7 +90,7 @@ unstructured(_) ->
           msg => {"hello ~s", ["world"]},
           meta => #{request_id => <<"string with spaces">>}
         },
-        #{}
+        #{template => [msg, level, rest]}
       )
     )
   ),
@@ -99,7 +99,7 @@ unstructured(_) ->
     iolist_to_binary(
       logger_formatter_json:format(
         #{level => info, msg => {"hello ~s", ["world"]}, meta => #{foo => <<"control char\n">>}},
-        #{}
+        #{template => [msg, level, rest]}
       )
     )
   ),
