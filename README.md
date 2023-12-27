@@ -274,6 +274,8 @@ You can also use a tuple to specify a standard set of keys to be used:
 
 `{keys, trace}`: `[trace_id, span_id]`
 
+`{keys, otel}`: `[otel_trace_id, otel_span_id, otel_trace_flags]`
+
 `{keys, gcp}`:
 
 ```erlang

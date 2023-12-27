@@ -387,6 +387,7 @@ expand_templates(Templates0) ->
 default_template({keys, all}) -> [msg, all];
 default_template({keys, basic}) -> [time, level, msg];
 default_template({keys, trace}) -> [trace_id, span_id];
+default_template({keys, otel}) -> [otel_trace_id, otel_span_id, otel_trace_flags];
 
 default_template({keys, gcp}) ->
   [
