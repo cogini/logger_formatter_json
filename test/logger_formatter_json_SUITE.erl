@@ -115,21 +115,19 @@ unstructured(_) ->
   ),
   ok.
 
+
 duplicate_keys(_) ->
   ?assertEqual(
     <<"{\"msg\":\"hello world\",\"level\":\"info\",\"foo\":\"bar\"}\n">>,
     iolist_to_binary(
       logger_formatter_json:format(
-        #{
-          level => info,
-          msg => {"hello ~s", ["world"]},
-          meta => #{foo => "bar"}
-        },
+        #{level => info, msg => {"hello ~s", ["world"]}, meta => #{foo => "bar"}},
         #{template => [msg, level, foo, foo]}
       )
     )
   ),
   ok.
+
 
 structured(_) ->
   ?assertEqual(
