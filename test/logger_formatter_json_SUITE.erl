@@ -5,7 +5,7 @@
 -include_lib("common_test/include/ct.hrl").
 -include_lib("stdlib/include/assert.hrl").
 
-all() -> [unstructured, structured, metadata].
+all() -> [unstructured, structured, metadata, duplicate_keys].
 
 unstructured() -> [{docs, "logs that aren't structured get passed through with a re-frame"}].
 
@@ -115,6 +115,21 @@ unstructured(_) ->
   ),
   ok.
 
+duplicate_keys(_) ->
+  ?assertEqual(
+    <<"{\"msg\":\"hello world\",\"level\":\"info\",\"foo\":\"bar\"}\n">>,
+    iolist_to_binary(
+      logger_formatter_json:format(
+        #{
+          level => info,
+          msg => {"hello ~s", ["world"]},
+          meta => #{foo => "bar"}
+        },
+        #{template => [msg, level, foo, foo]}
+      )
+    )
+  ),
+  ok.
 
 structured(_) ->
   ?assertEqual(
