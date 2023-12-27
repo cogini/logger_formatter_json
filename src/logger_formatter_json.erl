@@ -381,7 +381,8 @@ add_default_config(Config0) ->
 
 expand_templates(Templates0) ->
   Templates1 = lists:map(fun default_template/1, Templates0),
-  lists:flatten(Templates1).
+  Templates2 = remove_dups(Templates1),
+  lists:flatten(Templates2).
 
 
 default_template({keys, all}) -> [msg, all];
@@ -630,3 +631,6 @@ check_timezone(Tz) ->
 p(#{single_line := Single}) -> p(Single);
 p(true) -> "~0tp";
 p(false) -> "~tp".
+
+remove_dups([]) -> [];
+remove_dups([H | T]) -> [H | [X || X <- remove_dups(T), X /= H]].
