@@ -92,8 +92,8 @@ config :logger, :default_handler,
         # :mfa,
         :pid,
         :request_id,
-        :trace_id,
-        :span_id
+        :otel_trace_id,
+        :otel_span_id
       ]
     }
   }
@@ -122,8 +122,8 @@ config :foo, :logger_formatter_config, {:logger_formatter_json,
      # :mfa,
      :pid,
      :request_id,
-     :trace_id,
-     :span_id
+     :otel_trace_id,
+     :otel_span_id
    ]
  }}
 ```
@@ -151,7 +151,7 @@ In `rel/vm.args.eex`, set up the logger:
 or, with options:
 
 ```erlang
--kernel logger '[{handler, default, logger_std_h, #{formatter => {logger_formatter_json, #{template => [msg, time, level, file, line, mfa, pid, trace_id, span_id]}}}}]'
+-kernel logger '[{handler, default, logger_std_h, #{formatter => {logger_formatter_json, #{template => [msg, time, level, file, line, mfa, pid, otel_trace_id, otel_span_id]}}}}]'
 ```
 
 There used to be a way of doing this in Elixir, but it seems to have stopped
@@ -161,10 +161,9 @@ config:
 ```elixir
 if System.get_env("RELEASE_MODE") do
   config :kernel, :logger, [
-    {:handler, :default, :logger_std_h,
-     %{
+    {:handler, :default, :logger_std_h, %{
        formatter: {:logger_formatter_json, %{}}
-     }}
+    }}
   ]
 end
 ```
@@ -179,17 +178,15 @@ The formatter accepts a map of options, e.g.:
 
 ```elixir
 config :foo, :logger, [
-  {:handler, :default, :logger_std_h,
-   %{
-     formatter:
-       {:logger_formatter_json, %{
-            names: %{
-                time: "date",
-                level: "status",
-                msg: "message"
-            }
-        }}
-   }}
+  {:handler, :default, :logger_std_h, %{
+     formatter: {:logger_formatter_json, %{
+          names: %{
+            time: "date",
+            level: "status",
+            msg: "message"
+          }
+     }}
+  }}
 ]
 ```
 
@@ -199,13 +196,7 @@ The module has predefined sets of keys for `datadog` and `gcp`.
 
 ```elixir
 config :foo, :logger, [
-  {:handler, :default, :logger_std_h,
-   %{
-     formatter:
-       {:logger_formatter_json, %{
-            names: :datadog
-        }}
-   }}
+  {:handler, :default, :logger_std_h, %{formatter: {:logger_formatter_json, %{names: :datadog}}}}
 ]
 ```
 
@@ -229,8 +220,8 @@ template: [
   :line,
   :mfa,
   :pid,
-  :trace_id,
-  :span_id
+  :otel_trace_id,
+  :otel_span_id
 ]
 ```
 
@@ -283,8 +274,8 @@ You can also use a tuple to specify a standard set of keys to be used:
     msg,
     time,
     level,
-    trace_id,
-    span_id,
+    otel_trace_id,
+    otel_span_id,
     {group, source_location, [file, line, mfa]},
     {group, tags, [rest]}
 ]
@@ -293,11 +284,12 @@ You can also use a tuple to specify a standard set of keys to be used:
 You can specify multiple templates, so you can add your own metadata keys to one
 of the standard templates, e.g., `[{keys, basic}, request_id, trace_id, span_id]`.
 
+## Acknowlegements
+
+Much thanks to Fred Hebert, as always. His [flatlog](https://github.com/ferd/flatlog)
+library was a significant inspiration.
 
 ## Links
 
-Much thanks to Fred Hebert, as always.
-
 * [Erlang/OTP 21's new logger](https://ferd.ca/erlang-otp-21-s-new-logger.html)
-* [flatlog](https://github.com/ferd/flatlog)
 * [Canonical log lines](https://brandur.org/canonical-log-lines)
