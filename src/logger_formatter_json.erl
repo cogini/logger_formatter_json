@@ -47,7 +47,8 @@
 
 -spec format(LogEvent, Config) ->
   unicode:chardata() when LogEvent :: logger:log_event(), Config :: config().
-format(#{level := Level, msg := {report, V} = Msg, meta := Meta}, #{map_msg := merge} = Config0) when is_map(V) ->
+format(#{level := Level, msg := {report, V} = Msg, meta := Meta}, #{map_msg := merge} = Config0)
+when is_map(V) ->
   Config = add_default_config(Config0),
   Template0 = maps:get(template, Config),
   Template = lists:dropwhile(fun (msg) -> true; (_) -> false end, Template0),
@@ -58,7 +59,8 @@ format(#{level := Level, msg := {report, V} = Msg, meta := Meta}, #{map_msg := m
 format(#{level := Level, msg := Msg, meta := Meta}, Config0) when is_map(Config0) ->
   Config = add_default_config(Config0),
   Template = maps:get(template, Config),
-  Result0 = [do_format(Level, maps:put(msg, format_msg(Msg, Meta, Config), Meta), Template, [], Config)],
+  Result0 =
+    [do_format(Level, maps:put(msg, format_msg(Msg, Meta, Config), Meta), Template, [], Config)],
   Result = lists:flatten(Result0),
   [thoas:encode_to_iodata(Result, #{escape => unicode}), "\n"].
 
@@ -141,9 +143,7 @@ value([Key | Keys], Meta) when is_map_key(Key, Meta) -> value(Keys, maps:get(Key
 value([], Value) -> {ok, Value};
 value(_, _) -> error.
 
-to_output(_Key, Value, _Config) when is_map(Value) ->
-    maps:to_list(Value);
-
+to_output(_Key, Value, _Config) when is_map(Value) -> maps:to_list(Value);
 to_output(Key, Value, Config) -> iolist_to_binary(to_string(Key, Value, Config)).
 
 to_string({level, OutputFormat}, Value, Config) -> format_level(OutputFormat, Value, Config);
@@ -153,7 +153,6 @@ to_string(system_time, Value, Config) -> format_time(Value, Config);
 to_string(mfa, Value, Config) -> format_mfa(Value, Config);
 % to_string(crash_reason,Value,Config) ->
 %     format_crash_reason(Value,Config);
-
 to_string(_, Value, Config) -> to_string(Value, Config).
 
 to_string(X, _) when is_atom(X) -> atom_to_list(X);
@@ -187,7 +186,6 @@ printable_list(X) -> io_lib:printable_unicode_list(X).
   | {report, logger:report()}
   | {string, unicode:chardata()} , Meta :: logger:metadata() , Config :: config().
 format_msg({string, Chardata}, Meta, Config) -> format_msg({"~ts", [Chardata]}, Meta, Config);
-
 format_msg({report, Report}, _Meta, _Config) when is_map(Report) -> Report;
 
 format_msg({report, _} = Msg, Meta, #{report_cb := Fun} = Config)
