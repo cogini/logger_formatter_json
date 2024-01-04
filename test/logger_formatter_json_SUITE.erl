@@ -164,7 +164,7 @@ structured(_) ->
     iolist_to_binary(
       logger_formatter_json:format(
         #{level => info, msg => {report, #{hi => there}}, meta => #{}},
-        #{map_msg => merge}
+        #{map_msg => merge, template => [msg, level, rest]}
       )
     )
   ),
