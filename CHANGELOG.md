@@ -20,3 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.7.3] - 2023-10-30
 ### Added
 - Updated docs for Elixir 1.15
+
+## [0.8.0] - 2024-01-04
+### Added
+- Support structured logging
+- Add map_msg config param
