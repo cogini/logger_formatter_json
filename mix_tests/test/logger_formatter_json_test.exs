@@ -25,7 +25,7 @@ defmodule LoggerFormatterJsonTest do
 
   describe "Structured log messages" do
     test "Simple map" do
-       expected = ~s({"hi":"there","level":"info"}\n)
+       expected = ~s({"msg":{"hi":"there"},"level":"info"}\n)
        assert expected == to_string(:logger_formatter_json.format(%{level: :info, msg: {:report, %{hi: :there}}, meta: %{}}, %{}))
     end
   end
