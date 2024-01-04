@@ -131,11 +131,49 @@ duplicate_keys(_) ->
 
 structured(_) ->
   ?assertEqual(
-    <<"{\"hi\":\"there\",\"level\":\"info\"}\n">>,
+    <<"{\"msg\":{\"hi\":\"there\"},\"level\":\"info\"}\n">>,
     iolist_to_binary(
       logger_formatter_json:format(
         #{level => info, msg => {report, #{hi => there}}, meta => #{}},
         #{}
+      )
+    )
+  ),
+  % report_cb callback fun ignored for structured logs
+  ?assertEqual(
+    <<"{\"msg\":{\"hi\":\"there\"},\"level\":\"info\"}\n">>,
+    iolist_to_binary(
+      logger_formatter_json:format(
+        #{level => info, msg => {report, #{hi => there}}, meta => #{}},
+        #{report_cb => fun (_) -> {"ho ho ho", []} end}
+      )
+    )
+  ),
+  % Metadata with map value is embedded as map value
+  ?assertEqual(
+    <<"{\"msg\":{\"hi\":\"there\"},\"level\":\"info\",\"foo\":{\"biz\":\"baz\"}}\n">>,
+    iolist_to_binary(
+      logger_formatter_json:format(
+        #{level => info, msg => {report, #{hi => there}}, meta => #{foo => #{biz => baz}}},
+        #{}
+      )
+    )
+  ),
+  ?assertEqual(
+    <<"{\"level\":\"info\",\"hi\":\"there\"}\n">>,
+    iolist_to_binary(
+      logger_formatter_json:format(
+        #{level => info, msg => {report, #{hi => there}}, meta => #{}},
+        #{map_msg => merge}
+      )
+    )
+  ),
+  ?assertEqual(
+    <<"{\"level\":\"info\",\"biz\":\"baz\"}\n">>,
+    iolist_to_binary(
+      logger_formatter_json:format(
+        #{level => info, msg => {report, #{foo => bar, biz => baz}}, meta => #{}},
+        #{map_msg => merge, template => [level, biz]}
       )
     )
   ),

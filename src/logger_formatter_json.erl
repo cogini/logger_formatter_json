@@ -22,6 +22,7 @@
 -type config() :: #{
                   chars_limit => pos_integer() | unlimited,
                   depth => pos_integer() | unlimited,
+                  map_msg => atom(),
                   max_size => pos_integer() | unlimited,
                   names => map() | atom() | [atom() | map()],
                   types => map() | [map()],
@@ -46,27 +47,18 @@
 
 -spec format(LogEvent, Config) ->
   unicode:chardata() when LogEvent :: logger:log_event(), Config :: config().
-format(#{level := Level, msg := Msg0, meta := Meta}, Config0) when is_map(Config0) ->
+format(#{level := Level, msg := {report, V} = Msg, meta := Meta}, #{map_msg := merge} = Config0) when is_map(V) ->
+  Config = add_default_config(Config0),
+  Template0 = maps:get(template, Config),
+  Template = lists:dropwhile(fun (msg) -> true; (_) -> false end, Template0),
+  Result0 = [do_format(Level, maps:merge(Meta, V), Template, [], Config)],
+  Result = lists:flatten(Result0),
+  [thoas:encode_to_iodata(Result, #{escape => unicode}), "\n"];
+
+format(#{level := Level, msg := Msg, meta := Meta}, Config0) when is_map(Config0) ->
   Config = add_default_config(Config0),
   Template = maps:get(template, Config),
-  {BT, AT0} = lists:splitwith(fun (msg) -> false; (_) -> true end, Template),
-  {DoMsg, AT} =
-    case AT0 of
-      [msg | Rest] -> {true, Rest};
-      _ -> {false, AT0}
-    end,
-  MsgResult =
-    if
-      DoMsg ->
-        case format_msg(Msg0, Meta, Config) of
-          Msg when is_map(Msg) -> maps:to_list(Msg);
-          Msg -> {map_name(msg, Config), iolist_to_binary(Msg)}
-        end;
-
-      true -> []
-    end,
-  Result0 =
-    [do_format(Level, Meta, BT, [], Config), MsgResult, do_format(Level, Meta, AT, [], Config)],
+  Result0 = [do_format(Level, maps:put(msg, format_msg(Msg, Meta, Config), Meta), Template, [], Config)],
   Result = lists:flatten(Result0),
   [thoas:encode_to_iodata(Result, #{escape => unicode}), "\n"].
 
@@ -88,12 +80,12 @@ map_type(Key, #{types := Types}) -> maps:get(Key, Types, Key).
        Config :: config().
 do_format(Level, Data0, [all | _Format], _Seen, Config) ->
   Data = maps:put(level, Level, Data0),
-  lists:map(fun ({K, V}) -> {map_name(K, Config), to_binary(K, V, Config)} end, maps:to_list(Data));
+  lists:map(fun ({K, V}) -> {map_name(K, Config), to_output(K, V, Config)} end, maps:to_list(Data));
 
 do_format(Level, Data0, [rest | _Format], Seen, Config) ->
   Data1 = maps:put(level, Level, Data0),
   Data = maps:without(lists:flatten(Seen), Data1),
-  lists:map(fun ({K, V}) -> {map_name(K, Config), to_binary(K, V, Config)} end, maps:to_list(Data));
+  lists:map(fun ({K, V}) -> {map_name(K, Config), to_output(K, V, Config)} end, maps:to_list(Data));
 
 do_format(Level, Data0, [{group, Key, Keys} | Format], Seen, Config) ->
   do_format(Level, Data0, [{group, Key, Keys, #{}} | Format], Seen, Config);
@@ -103,14 +95,14 @@ do_format(Level, Data0, [{group, Key, Keys, GroupTypes} | Format], Seen, Config)
   Data = maps:with(Keys, Data0),
   Data1 =
     lists:map(
-      fun ({K, V}) -> {maps:get(K, Types, K), to_binary(K, V, Config)} end,
+      fun ({K, V}) -> {maps:get(K, Types, K), to_output(K, V, Config)} end,
       maps:to_list(Data)
     ),
   [{map_name(Key, Config), Data1} | do_format(Level, Data0, Format, [Keys | Seen], Config)];
 
 do_format(Level, Data, [level | Format], Seen, Config) ->
   [
-    {map_name(level, Config), to_binary(map_type(level, Config), Level, Config)}
+    {map_name(level, Config), to_output(map_type(level, Config), Level, Config)}
     | do_format(Level, Data, Format, [level | Seen], Config)
   ];
 
@@ -129,7 +121,7 @@ do_format(Level, Data, [Key | Format], Seen, Config)
 when is_atom(Key) orelse is_list(Key) andalso is_atom(hd(Key)) ->
   String0 =
     case value(Key, Data) of
-      {ok, Value} -> to_binary(map_type(Key, Config), Value, Config);
+      {ok, Value} -> to_output(map_type(Key, Config), Value, Config);
       error -> []
     end,
   case String0 of
@@ -149,7 +141,10 @@ value([Key | Keys], Meta) when is_map_key(Key, Meta) -> value(Keys, maps:get(Key
 value([], Value) -> {ok, Value};
 value(_, _) -> error.
 
-to_binary(Key, Value, Config) -> iolist_to_binary(to_string(Key, Value, Config)).
+to_output(_Key, Value, _Config) when is_map(Value) ->
+    maps:to_list(Value);
+
+to_output(Key, Value, Config) -> iolist_to_binary(to_string(Key, Value, Config)).
 
 to_string({level, OutputFormat}, Value, Config) -> format_level(OutputFormat, Value, Config);
 to_string(system_time, Value, Config) -> format_time(Value, Config);
@@ -158,6 +153,7 @@ to_string(system_time, Value, Config) -> format_time(Value, Config);
 to_string(mfa, Value, Config) -> format_mfa(Value, Config);
 % to_string(crash_reason,Value,Config) ->
 %     format_crash_reason(Value,Config);
+
 to_string(_, Value, Config) -> to_string(Value, Config).
 
 to_string(X, _) when is_atom(X) -> atom_to_list(X);
@@ -191,6 +187,8 @@ printable_list(X) -> io_lib:printable_unicode_list(X).
   | {report, logger:report()}
   | {string, unicode:chardata()} , Meta :: logger:metadata() , Config :: config().
 format_msg({string, Chardata}, Meta, Config) -> format_msg({"~ts", [Chardata]}, Meta, Config);
+
+format_msg({report, Report}, _Meta, _Config) when is_map(Report) -> Report;
 
 format_msg({report, _} = Msg, Meta, #{report_cb := Fun} = Config)
 when is_function(Fun, 1); is_function(Fun, 2) ->
@@ -251,8 +249,6 @@ format_msg({report, Report}, #{report_cb := Fun} = Meta, Config) when is_functio
 
 % format_msg({report,#{label:={error_logger,_}, format:=Format, args:=Args},Meta,Config) ->
 %     format_msg({Format, Args}, Meta, Config);
-format_msg({report, Report}, _Meta, _Config) when is_map(Report) -> Report;
-
 format_msg({report, Report}, Meta, Config) ->
   format_msg({report, Report}, Meta#{report_cb => fun logger:format_report/1}, Config);
 
@@ -366,6 +362,7 @@ add_default_config(Config0) ->
   Names = get_names(maps:get(names, Config0, undefined)),
   Types = get_types(maps:get(types, Config0, undefined)),
   Template = expand_templates(maps:get(template, Config0, [{keys, all}])),
+  MapMsg = maps:get(map_msg, Config0, merge),
   maps:merge(
     Default,
     Config0#{
@@ -374,7 +371,8 @@ add_default_config(Config0) ->
       names => Names,
       types => Types,
       template => Template,
-      time_offset => Offset
+      time_offset => Offset,
+      map_msg => MapMsg
     }
   ).
 
@@ -385,7 +383,7 @@ expand_templates(Templates0) ->
   lists:flatten(Templates2).
 
 
-default_template({keys, all}) -> [msg, all];
+default_template({keys, all}) -> [msg, rest];
 default_template({keys, basic}) -> [time, level, msg];
 default_template({keys, trace}) -> [trace_id, span_id];
 default_template({keys, otel}) -> [otel_trace_id, otel_span_id, otel_trace_flags];
@@ -504,6 +502,12 @@ do_check_config([{Type, L} | Config]) when Type == chars_limit; Type == depth; T
     ok -> do_check_config(Config);
     error -> {error, {invalid_formatter_config, ?MODULE, {Type, L}}}
   end;
+
+do_check_config([{map_msg, embed} | Config]) -> do_check_config(Config);
+do_check_config([{map_msg, merge} | Config]) -> do_check_config(Config);
+
+do_check_config([{map_msg, Format} | _Config]) ->
+  {error, {invalid_formatter_config, ?MODULE, {map_msg, Format}}};
 
 do_check_config([{single_line, SL} | Config]) when is_boolean(SL) -> do_check_config(Config);
 do_check_config([{legacy_header, LH} | Config]) when is_boolean(LH) -> do_check_config(Config);
