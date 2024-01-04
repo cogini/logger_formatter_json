@@ -5,6 +5,12 @@
 
 This is a formatter for the Erlang logger application that outputs JSON.
 
+It supports "structured" logging, i.e., logging maps. Just call `logger:info(#{foo => bar})`.
+Metadata values can also be maps.
+
+You can control the order of output keys, to e.g., put the message first, avoiding having
+to read a big mess of JSON to find the important parts.
+
 It implements the [formatter](https://www.erlang.org/doc/apps/kernel/logger_chapter.html#formatters)
 API for the high-performance `logger` application introduced in OTP 21.
 
@@ -76,7 +82,7 @@ config :logger, :default_handler,
   formatter: {:logger_formatter_json, %{}}
 ```
 
-or, with options (see below):
+Or, with options (see below):
 
 ```elixir
 config :logger, :default_handler,
@@ -108,7 +114,7 @@ In `config/prod.exs` or `config/runtime.exs`, define the formatter config:
 config :foo, :logger_formatter_config, {:logger_formatter_json, %{}}
 ```
 
-or, with options (see below):
+Or, with options (see below):
 
 ```elixir
 config :foo, :logger_formatter_config, {:logger_formatter_json,
@@ -257,7 +263,7 @@ This would result in a log message like:
 }
 ```
 
-The default template is `[msg, all]`.
+The default template is `[msg, rest]`.
 
 You can also use a tuple to specify a standard set of keys to be used:
 
@@ -284,7 +290,16 @@ You can also use a tuple to specify a standard set of keys to be used:
 You can specify multiple templates, so you can add your own metadata keys to one
 of the standard templates, e.g., `[{keys, basic}, request_id, trace_id, span_id]`.
 
-## Acknowlegements
+When logging maps, default (`embed`) puts the map under the `msg` key.
+If you set the config option `map_msg` to `merge`, then the keys of the map
+will be merged into the metadata.
+
+So `logger:info(#{hi => there}}` is logged as `{"level":"info","hi":"there"}`.
+This lets you control how the fields appear in the output with the template, e.g.,
+a template of `[level, biz]` would result in output of `{"level":"info","biz":"baz"}`
+for the message `logger:info(#{foo => bar, biz => baz}}`.
+
+## Acknowledgements
 
 Much thanks to Fred Hebert, as always. His [flatlog](https://github.com/ferd/flatlog)
 library was a significant inspiration.
