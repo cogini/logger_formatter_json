@@ -47,7 +47,7 @@
 
 -spec format(LogEvent, Config) ->
   unicode:chardata() when LogEvent :: logger:log_event(), Config :: config().
-format(#{level := Level, msg := {report, V} = Msg, meta := Meta}, #{map_msg := merge} = Config0)
+format(#{level := Level, msg := {report, V} = _Msg, meta := Meta}, #{map_msg := merge} = Config0)
 when is_map(V) ->
   Config = add_default_config(Config0),
   Template0 = maps:get(template, Config),
