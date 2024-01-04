@@ -25,3 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Support structured logging
 - Add map_msg config param
+
+## [0.8.1] - 2024-01-04
+### Added
+- Upgrade thoas version
