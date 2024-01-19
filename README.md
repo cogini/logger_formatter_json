@@ -5,17 +5,20 @@
 
 This is a formatter for the Erlang logger application that outputs JSON.
 
-It supports "structured" logging, i.e., logging maps. Just call `logger:info(#{foo => bar})`.
+When logging text messages, it outputs the text message under the `msg` key
+along with logger metadata such as OpenTelemetry trace ids.
+
+It also supports "structured" logging of maps, e.g. `logger:info(#{foo => bar})`.
 Metadata values can also be maps.
 
-You can control the order of output keys, to e.g., put the message first, avoiding having
-to read a big mess of JSON to find the important parts.
+You can control the order of output keys to put the message first, avoiding
+having to read a big mess of JSON to find the important parts.
 
 It implements the [formatter](https://www.erlang.org/doc/apps/kernel/logger_chapter.html#formatters)
 API for the high-performance `logger` application introduced in OTP 21.
 
-It formats log messages and logger metadata as JSON, supporting
-naming conventions from services such as [Datadog](https://www.erlang.org/doc/man/logger_formatter.html) and
+You can configure the names of output keys to support naming conventions from services
+such as [Datadog](https://www.erlang.org/doc/man/logger_formatter.html) and
 [Google Cloud](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#LogSeverity)
 
 It is written in Erlang with no dependencies except for the Erlang JSON library
