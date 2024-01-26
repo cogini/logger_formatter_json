@@ -102,7 +102,8 @@ config :logger, :default_handler,
         :pid,
         :request_id,
         :otel_trace_id,
-        :otel_span_id
+        :otel_span_id,
+        :otel_trace_flags
       ]
     }
   }
@@ -132,7 +133,8 @@ config :foo, :logger_formatter_config, {:logger_formatter_json,
      :pid,
      :request_id,
      :otel_trace_id,
-     :otel_span_id
+     :otel_span_id,
+     :otel_trace_flags
    ]
  }}
 ```
@@ -160,7 +162,7 @@ In `rel/vm.args.eex`, set up the logger:
 or, with options:
 
 ```erlang
--kernel logger '[{handler, default, logger_std_h, #{formatter => {logger_formatter_json, #{template => [msg, time, level, file, line, mfa, pid, otel_trace_id, otel_span_id]}}}}]'
+-kernel logger '[{handler, default, logger_std_h, #{formatter => {logger_formatter_json, #{template => [msg, time, level, file, line, mfa, pid, otel_trace_id, otel_span_id, otel_trace_flags]}}}}]'
 ```
 
 There used to be a way of doing this in Elixir, but it seems to have stopped
@@ -230,7 +232,8 @@ template: [
   :mfa,
   :pid,
   :otel_trace_id,
-  :otel_span_id
+  :otel_span_id,
+  :otel_trace_flags
 ]
 ```
 
