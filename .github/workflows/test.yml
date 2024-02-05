@@ -19,6 +19,10 @@ jobs:
         elixir: ['1.13.4', '1.14.5', '1.15.7', '1.16.1']
         # https://hexdocs.pm/elixir/compatibility-and-deprecations.html
         exclude:
+          - otp: '24.3'
+            elixir: '1.15.7'
+          - otp: '24.3'
+            elixir: '1.16.1'
           - otp: '26.2.1'
             elixir: '1.13.4'
           - otp: '26.2.1'
