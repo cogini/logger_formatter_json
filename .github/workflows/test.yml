@@ -23,10 +23,8 @@ jobs:
             elixir: '1.13.4'
           - otp: '26.2.1'
             elixir: '1.14.5'
-
     env:
       MIX_ENV: test
-
     steps:
       - name: Check out source
         uses: actions/checkout@v3
