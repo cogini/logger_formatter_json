@@ -14,12 +14,12 @@ Metadata values can also be maps.
 You can control the order of output keys to put the message first, avoiding
 having to read a big mess of JSON to find the important parts.
 
-It implements the [formatter](https://www.erlang.org/doc/apps/kernel/logger_chapter.html#formatters)
-API for the high-performance `logger` application introduced in OTP 21.
-
 You can configure the names of output keys to support naming conventions from services
 such as [Datadog](https://www.erlang.org/doc/man/logger_formatter.html) and
 [Google Cloud](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#LogSeverity)
+
+It implements the [formatter](https://www.erlang.org/doc/apps/kernel/logger_chapter.html#formatters)
+API for the high-performance `logger` application introduced in OTP 21.
 
 It is written in Erlang with no dependencies except for the Erlang JSON library
 [thoas](https://github.com/lpil/thoas). It can be used by pure Erlang projects
@@ -42,7 +42,7 @@ Add `logger_formatter_json` to the list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:logger_formatter_json, "~> 0.7"},
+    {:logger_formatter_json, "~> 0.8"},
   ]
 end
 ```
