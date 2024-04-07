@@ -36,7 +36,7 @@ defmodule LoggerFormatterJsonTests.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      {:logger_formatter_json, path: "../"},
+      {:logger_formatter_json, path: "../"}
     ]
   end
 end
