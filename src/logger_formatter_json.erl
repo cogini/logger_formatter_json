@@ -176,6 +176,7 @@ to_string(X, Config) when is_binary(X) ->
 
 to_string(X, Config) -> io_lib:format(p(Config), [X]).
 
+
 -spec printable_list(list()) -> boolean.
 printable_list([]) -> false;
 printable_list(X) -> io_lib:printable_unicode_list(X).
