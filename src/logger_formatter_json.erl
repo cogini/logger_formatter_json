@@ -169,17 +169,29 @@ to_string(X, Config) when is_list(X) ->
 to_string(<<>>, _Config) -> <<>>;
 
 to_string(X, Config) when is_binary(X) ->
-  case re:run(X, <<"[[:^print:]]">>, [{capture, none}, unicode]) of
-    match -> io_lib:format(p(Config), [X]);
-    _ -> X
+  case is_printable(X) of
+    true -> X;
+    _ -> io_lib:format(p(Config), [X])
   end;
 
 to_string(X, Config) -> io_lib:format(p(Config), [X]).
 
 
--spec printable_list(list()) -> boolean.
+-spec printable_list(list()) -> boolean().
 printable_list([]) -> false;
 printable_list(X) -> io_lib:printable_unicode_list(X).
+
+-spec is_printable(term()) -> boolean().
+is_printable(X) when is_binary(X) ->
+  % case re:run(X, <<"[[:^print:]]">>, [{capture, none}, unicode]) of
+  %   match -> false;
+  %   _ -> true
+  % end;
+  io_lib:printable_unicode_list(unicode:characters_to_list(X, unicode)).
+
+
+% is_printable(X) when is_list(X) -> unicode:characters_to_list(X, unicode);
+is_printable(_) -> false.
 
 -spec format_msg(Msg, Meta, Config) ->
   binary()
