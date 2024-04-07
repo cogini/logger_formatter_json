@@ -159,7 +159,6 @@ to_string(X, _) when is_atom(X) -> atom_to_list(X);
 to_string(X, _) when is_integer(X) -> integer_to_list(X);
 to_string(X, _) when is_pid(X) -> pid_to_list(X);
 to_string(X, _) when is_reference(X) -> ref_to_list(X);
-
 to_string(X, Config) when is_list(X) ->
   case printable_list(lists:flatten(X)) of
     true -> X;
@@ -178,6 +177,7 @@ to_string(X, Config) -> io_lib:format(p(Config), [X]).
 
 
 -spec printable_list(list()) -> boolean().
+% Print empty string as empty list
 printable_list([]) -> false;
 printable_list(X) -> io_lib:printable_unicode_list(X).
 
