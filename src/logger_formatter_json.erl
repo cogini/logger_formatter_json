@@ -12,7 +12,7 @@
 
 -ifdef(TEST).
 
--export([format_msg/3]).
+-export([format_msg/3, to_string/2, is_printable/1]).
 
 -endif.
 
