@@ -188,10 +188,7 @@ is_printable(X) when is_binary(X) ->
   %   match -> false;
   %   _ -> true
   % end;
-  io_lib:printable_unicode_list(unicode:characters_to_list(X, unicode));
-
-% is_printable(X) when is_list(X) -> unicode:characters_to_list(X, unicode);
-is_printable(_) -> false.
+  io_lib:printable_unicode_list(unicode:characters_to_list(X, unicode)).
 
 
 -spec format_msg(Msg, Meta, Config) ->
