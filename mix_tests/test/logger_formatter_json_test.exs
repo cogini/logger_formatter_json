@@ -21,6 +21,16 @@ defmodule LoggerFormatterJsonTest do
        expected = ~s({"msg":"hello world","level":"info"}\n)
        assert expected == to_string(:logger_formatter_json.format(%{level: :info, msg: {'hello ~s', ['world']}, meta: %{}}, %{}))
     end
+
+    test "String with microsecond" do
+      expected = ~s({"msg":"408\\u00B5s","level":"info"}\n)
+      assert expected == to_string(:logger_formatter_json.format(%{level: :info, msg: {:string, "408µs"}, meta: %{}}, %{}))
+    end
+
+    test "String with new line after microsecond" do
+      expected = ~s({"msg":"408\\u00B5s\\n","level":"info"}\n)
+      assert expected == to_string(:logger_formatter_json.format(%{level: :info, msg: {:string, "408µs\n"}, meta: %{}}, %{}))
+    end
   end
 
   describe "Structured log messages" do
