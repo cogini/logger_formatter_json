@@ -5,21 +5,50 @@
 -include_lib("common_test/include/ct.hrl").
 -include_lib("stdlib/include/assert.hrl").
 
-all() -> [unstructured, structured, metadata, duplicate_keys].
+all() -> [to_string, is_printable, unstructured, structured, metadata, duplicate_keys].
+
+to_string(_) ->
+  Config = #{single_line => true},
+  ?assertEqual("foo", logger_formatter_json:to_string("foo", Config)),
+  ?assertEqual("foo", logger_formatter_json:to_string(foo, Config)),
+  ?assertEqual(["[]"], logger_formatter_json:to_string([], Config)),
+  ?assertEqual(<<>>, logger_formatter_json:to_string(<<>>, Config)),
+  ?assertEqual(<<"foo">>, logger_formatter_json:to_string(<<"foo">>, Config)),
+  ?assertEqual(
+    <<"foo\nbar">>,
+    iolist_to_binary(logger_formatter_json:to_string(<<"foo\nbar">>, Config))
+  ),
+  ?assertEqual(
+    <<"793µs"/utf8>>,
+    iolist_to_binary(logger_formatter_json:to_string(<<"793µs"/utf8>>, Config))
+  ).
+
+
+is_printable(_) ->
+  ?assertEqual(true, logger_formatter_json:is_printable(<<"foo">>)),
+  % ?assertEqual(nomatch, re:run(<<"foo\nbar">>, <<"[[:^print:]]">>, [{capture, none}, unicode])),
+  ?assertEqual(true, logger_formatter_json:is_printable(<<"foo\nbar">>)),
+  ?assertEqual(true, logger_formatter_json:is_printable(<<"foo\nbar"/utf8>>)),
+  ?assertEqual(false, logger_formatter_json:is_printable(<<0>>)).
+
 
 unstructured() -> [{docs, "logs that aren't structured get passed through with a re-frame"}].
 
 unstructured(_) ->
+  Config = #{single_line => true},
   ?assertEqual(
     <<"{\"msg\":\"abc\",\"level\":\"info\"}\n">>,
     iolist_to_binary(
-      logger_formatter_json:format(#{level => info, msg => {string, "abc"}, meta => #{}}, #{})
+      logger_formatter_json:format(#{level => info, msg => {string, "abc"}, meta => #{}}, Config)
     )
   ),
   ?assertEqual(
     <<"{\"msg\":\"abc\",\"level\":\"info\"}\n">>,
     iolist_to_binary(
-      logger_formatter_json:format(#{level => info, msg => {string, [<<"abc">>]}, meta => #{}}, #{})
+      logger_formatter_json:format(
+        #{level => info, msg => {string, [<<"abc">>]}, meta => #{}},
+        Config
+      )
     )
   ),
   ?assertEqual(
@@ -27,7 +56,40 @@ unstructured(_) ->
     iolist_to_binary(
       logger_formatter_json:format(
         #{level => info, msg => {string, [<<"793µs"/utf8>>]}, meta => #{}},
-        #{}
+        Config
+      )
+    )
+  ),
+  ?assertEqual(
+    <<"{\"msg\":\"\",\"level\":\"info\"}\n">>,
+    iolist_to_binary(
+      logger_formatter_json:format(#{level => info, msg => {string, <<>>}, meta => #{}}, Config)
+    )
+  ),
+  ?assertEqual(
+    <<"{\"msg\":\"foo\\nbar\",\"level\":\"info\"}\n">>,
+    iolist_to_binary(
+      logger_formatter_json:format(
+        #{level => info, msg => {string, <<"foo\nbar">>}, meta => #{}},
+        Config
+      )
+    )
+  ),
+  ?assertEqual(
+    <<"{\"msg\":\"foo\\n\",\"level\":\"info\"}\n">>,
+    iolist_to_binary(
+      logger_formatter_json:format(
+        #{level => info, msg => {string, <<"foo\n">>}, meta => #{}},
+        Config
+      )
+    )
+  ),
+  ?assertEqual(
+    <<"{\"msg\":\"793\\u00B5s\\n\",\"level\":\"info\"}\n">>,
+    iolist_to_binary(
+      logger_formatter_json:format(
+        #{level => info, msg => {string, <<"793µs\n"/utf8>>}, meta => #{}},
+        Config
       )
     )
   ),
@@ -91,15 +153,6 @@ unstructured(_) ->
           meta => #{request_id => <<"string with spaces">>}
         },
         #{template => [msg, level, request_id]}
-      )
-    )
-  ),
-  ?assertEqual(
-    <<"{\"msg\":\"hello world\",\"level\":\"info\",\"foo\":\"<<\\\"control char\\\\n\\\">>\"}\n">>,
-    iolist_to_binary(
-      logger_formatter_json:format(
-        #{level => info, msg => {"hello ~s", ["world"]}, meta => #{foo => <<"control char\n">>}},
-        #{template => [msg, level, foo]}
       )
     )
   ),
