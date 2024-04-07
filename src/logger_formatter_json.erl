@@ -159,6 +159,7 @@ to_string(X, _) when is_atom(X) -> atom_to_list(X);
 to_string(X, _) when is_integer(X) -> integer_to_list(X);
 to_string(X, _) when is_pid(X) -> pid_to_list(X);
 to_string(X, _) when is_reference(X) -> ref_to_list(X);
+
 to_string(X, Config) when is_list(X) ->
   case printable_list(lists:flatten(X)) of
     true -> X;
