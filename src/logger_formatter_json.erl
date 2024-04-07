@@ -184,7 +184,7 @@ printable_list(X) -> io_lib:printable_unicode_list(X).
   binary()
   | map() when Msg :: {io:format(), [term()]}
   | {report, logger:report()}
-  | {string, unicode:chardata()} , Meta :: logger:metadata() , Config :: config().
+  | {string, unicode:chardata()}, Meta :: logger:metadata() , Config :: config().
 format_msg({string, Chardata}, Meta, Config) -> format_msg({"~ts", [Chardata]}, Meta, Config);
 format_msg({report, Report}, _Meta, _Config) when is_map(Report) -> Report;
 
