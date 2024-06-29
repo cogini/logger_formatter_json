@@ -5,7 +5,12 @@
 -include_lib("common_test/include/ct.hrl").
 -include_lib("stdlib/include/assert.hrl").
 
-all() -> [to_string, is_printable, unstructured, structured, metadata, duplicate_keys].
+all() -> [print_string, to_string, printable_list, is_printable, unstructured, structured, metadata, duplicate_keys].
+
+print_string(_) ->
+  Config = #{single_line => true},
+  ?assertEqual(<<"foo">>, logger_formatter_json:print_string("foo", Config)),
+  ?assertEqual(<<"foo">>, logger_formatter_json:print_string(<<"foo">>, Config)).
 
 to_string(_) ->
   Config = #{single_line => true},
@@ -23,6 +28,8 @@ to_string(_) ->
     iolist_to_binary(logger_formatter_json:to_string(<<"793µs"/utf8>>, Config))
   ).
 
+printable_list(_) ->
+  ?assertEqual(true, logger_formatter_json:printable_list("foo")).
 
 is_printable(_) ->
   ?assertEqual(true, logger_formatter_json:is_printable(<<"foo">>)),
@@ -188,6 +195,19 @@ structured(_) ->
     iolist_to_binary(
       logger_formatter_json:format(
         #{level => info, msg => {report, #{hi => there}}, meta => #{}},
+        #{}
+      )
+    )
+  ),
+  ?assertEqual(
+    <<"{\"msg\":{\"args\":\"10.10.2.182\",\"label\":\"{error_logger,error_msg}\",\"format\":\"** System NOT running to use fully qualified hostnames **~n** Hostname ~ts is illegal **~n\"},\"level\":\"info\"}\n">>,
+    iolist_to_binary(
+      logger_formatter_json:format(
+        #{level => info, msg =>
+          {report, #{args => ["10.10.2.182"], label => {error_logger, error_msg},
+                     format => "** System NOT running to use fully qualified hostnames **~n** Hostname ~ts is illegal **~n"
+                    }
+          }, meta => #{}},
         #{}
       )
     )
