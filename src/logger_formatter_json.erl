@@ -190,6 +190,18 @@ is_printable(X) when is_binary(X) ->
   % end;
   io_lib:printable_unicode_list(unicode:characters_to_list(X, unicode)).
 
+% Format strings for print
+print_string(X, Config) when is_binary(X) ->
+  case is_printable(X) of
+    true -> X;
+    _ -> io_lib:format(p(Config), [X])
+  end;
+
+print_string(X, Config) when is_list(X) ->
+  case printable_list(lists:flatten(X)) of
+    true -> list_to_binary(X);
+    _ -> io_lib:format(p(Config), [X])
+  end.
 
 -spec format_msg(Msg, Meta, Config) ->
   binary()
@@ -197,7 +209,8 @@ is_printable(X) when is_binary(X) ->
   | {report, logger:report()}
   | {string, unicode:chardata()} , Meta :: logger:metadata() , Config :: config().
 format_msg({string, Chardata}, Meta, Config) -> format_msg({"~ts", [Chardata]}, Meta, Config);
-format_msg({report, Report}, _Meta, _Config) when is_map(Report) -> Report;
+format_msg({report, Report}, _Meta, Config) when is_map(Report) ->
+    maps:map(fun(_K, V) -> print_string(to_string(V, Config), Config) end, Report);
 
 format_msg({report, _} = Msg, Meta, #{report_cb := Fun} = Config)
 when is_function(Fun, 1); is_function(Fun, 2) ->
