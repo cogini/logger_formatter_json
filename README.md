@@ -1,4 +1,4 @@
-![test workflow](https://github.com/reachfh/logger_formatter_json/actions/workflows/test.yml/badge.svg)
+![test workflow](https://github.com/cogini/logger_formatter_json/actions/workflows/test.yml/badge.svg)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
 
 # logger_formatter_json
