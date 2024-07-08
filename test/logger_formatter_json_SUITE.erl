@@ -276,7 +276,7 @@ structured(_) ->
           },
           meta => #{}
         },
-        #{}
+        #{template => [msg, level, label, format]}
       )
     )
   ),
