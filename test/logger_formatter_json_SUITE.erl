@@ -70,6 +70,48 @@ unstructured(_) ->
     )
   ),
   ?assertEqual(
+    <<"{\"msg\":\"#PID<0.21909.0> running Example.Endpoint (connection #PID<0.21908.0>, stream id 1) terminated\\nServer: app.example.com:80 (http)\\nRequest: GET /\\n** (exit) an exception was raised:\\n    ** (Postgrex.Error) ERROR 42P01 (undefined_table) relation \\\"ads\\\" does not exist\\n\\n    query: SELECT a0.\\\"id\\\", a0.\\\"ads_package\\\", a0.\\\"ads_identification\\\", a0.\\\"size\\\", a0.\\\"location\\\", a0.\\\"company\\\", a0.\\\"inserted_at\\\", a0.\\\"updated_at\\\" FROM \\\"ads\\\" AS a0 WHERE (((a0.\\\"location\\\" = $1) AND (a0.\\\"ads_package\\\" = $2)) AND (a0.\\\"company\\\" = $3))\\n        (ecto_sql 3.11.3) lib/ecto/adapters/sql.ex:1054: Ecto.Adapters.SQL.raise_sql_call_error/1\\n        (ecto_sql 3.11.3) lib/ecto/adapters/sql.ex:952: Ecto.Adapters.SQL.execute/6\\n        (ecto 3.11.2) lib/ecto/repo/queryable.ex:232: Ecto.Repo.Queryable.execute/4\\n        (ecto 3.11.2) lib/ecto/repo/queryable.ex:19: Ecto.Repo.Queryable.all/3\\n        (ecto 3.11.2) lib/ecto/repo/queryable.ex:154: Ecto.Repo.Queryable.one/3\\n        (example 0.1.0) lib/example_web/controllers/home_page_controller.ex:141: ExampleWeb.HomePageController.home_page/2\\n        (example 0.1.0) lib/example_web/controllers/home_page_controller.ex:1: ExampleWeb.HomePageController.action/2\\n        (example 0.1.0) lib/example_web/controllers/home_page_controller.ex:1: ExampleWeb.HomePageController.phoenix_controller_pipeline/2\",\"level\":\"info\"}\n">>,
+    iolist_to_binary(
+      logger_formatter_json:format(
+        #{
+          level => info,
+          msg
+          =>
+          {
+            string,
+            [
+              <<"#PID<0.21909.0>">>,
+              <<" running ">>,
+              <<"Example.Endpoint">>,
+              [<<" (connection ">>, <<"#PID<0.21908.0>">>, <<", stream id ">>, <<"1">>, 41],
+              <<" terminated\n">>,
+              [
+                [
+                  <<"Server: ">>,
+                  <<"app.example.com">>,
+                  <<":">>,
+                  <<"80">>,
+                  32,
+                  40,
+                  <<"http">>,
+                  41,
+                  10
+                ],
+                [<<"Request: ">>, <<"GET">>, 32, <<"/">>, 10]
+              ]
+              |
+              <<
+                "** (exit) an exception was raised:\n    ** (Postgrex.Error) ERROR 42P01 (undefined_table) relation \"ads\" does not exist\n\n    query: SELECT a0.\"id\", a0.\"ads_package\", a0.\"ads_identification\", a0.\"size\", a0.\"location\", a0.\"company\", a0.\"inserted_at\", a0.\"updated_at\" FROM \"ads\" AS a0 WHERE (((a0.\"location\" = $1) AND (a0.\"ads_package\" = $2)) AND (a0.\"company\" = $3))\n        (ecto_sql 3.11.3) lib/ecto/adapters/sql.ex:1054: Ecto.Adapters.SQL.raise_sql_call_error/1\n        (ecto_sql 3.11.3) lib/ecto/adapters/sql.ex:952: Ecto.Adapters.SQL.execute/6\n        (ecto 3.11.2) lib/ecto/repo/queryable.ex:232: Ecto.Repo.Queryable.execute/4\n        (ecto 3.11.2) lib/ecto/repo/queryable.ex:19: Ecto.Repo.Queryable.all/3\n        (ecto 3.11.2) lib/ecto/repo/queryable.ex:154: Ecto.Repo.Queryable.one/3\n        (example 0.1.0) lib/example_web/controllers/home_page_controller.ex:141: ExampleWeb.HomePageController.home_page/2\n        (example 0.1.0) lib/example_web/controllers/home_page_controller.ex:1: ExampleWeb.HomePageController.action/2\n        (example 0.1.0) lib/example_web/controllers/home_page_controller.ex:1: ExampleWeb.HomePageController.phoenix_controller_pipeline/2"
+              >>
+            ]
+          },
+          meta => #{}
+        },
+        Config
+      )
+    )
+  ),
+  ?assertEqual(
     <<"{\"msg\":\"793\\u00B5s\",\"level\":\"info\"}\n">>,
     iolist_to_binary(
       logger_formatter_json:format(
