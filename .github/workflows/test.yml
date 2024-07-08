@@ -49,11 +49,9 @@ jobs:
       - name: Retrieve cached deps
         uses: actions/cache@v4
         with:
-          path: |
-            _build
+          path: _build
           key: ${{ matrix.otp }}-${{ matrix.elixir}}-${{ hashFiles('**/rebar.lock') }}
-          restore-keys: |
-            ${{ matrix.otp }}-${{ matrix.elixir }}-
+          restore-keys: ${{ matrix.otp }}-${{ matrix.elixir }}-
 
       - name: Check formatting
         run: rebar3 steamroll --check
