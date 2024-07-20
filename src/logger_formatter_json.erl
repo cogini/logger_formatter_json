@@ -210,7 +210,19 @@ print_string(X, Config) when is_list(X) ->
   | map() when Msg :: {io:format(), [term()]}
   | {report, logger:report()}
   | {string, unicode:chardata()} , Meta :: logger:metadata() , Config :: config().
-format_msg({string, Chardata}, Meta, Config) -> format_msg({"~ts", [Chardata]}, Meta, Config);
+% format_msg({string, Chardata}, Meta, Config) -> format_msg({"~ts", [Chardata]}, Meta, Config);
+format_msg({string, Chardata}, Meta, Config) when is_binary(Chardata) ->
+  format_msg({string, unicode:characters_to_list(Chardata, unicode)}, Meta, Config);
+
+format_msg({string, Chardata}, Meta, Config) ->
+  case io_lib:printable_unicode_list(Chardata) of
+    true -> format_msg({"~ts", [Chardata]}, Meta, Config);
+    false ->
+      format_msg({"~ts", [iolist_to_binary(Chardata)]}, Meta, Config)
+      % Flat = lists:flatten(Chardata),
+      % Strings = lists:map(fun (X) -> to_string(X, Config) end, Flat),
+      % format_msg({"~ts", [lists:flatten(Strings)]}, Meta, Config)
+  end;
 
 format_msg({report, Report}, _Meta, Config) when is_map(Report) ->
   maps:map(fun (_K, V) -> print_string(to_string(V, Config), Config) end, Report);
