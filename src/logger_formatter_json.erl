@@ -217,11 +217,10 @@ format_msg({string, Chardata}, Meta, Config) when is_binary(Chardata) ->
 format_msg({string, Chardata}, Meta, Config) ->
   case io_lib:printable_unicode_list(Chardata) of
     true -> format_msg({"~ts", [Chardata]}, Meta, Config);
-    false ->
-      format_msg({"~ts", [iolist_to_binary(Chardata)]}, Meta, Config)
-      % Flat = lists:flatten(Chardata),
-      % Strings = lists:map(fun (X) -> to_string(X, Config) end, Flat),
-      % format_msg({"~ts", [lists:flatten(Strings)]}, Meta, Config)
+    false -> format_msg({"~ts", [iolist_to_binary(Chardata)]}, Meta, Config)
+    % Flat = lists:flatten(Chardata),
+    % Strings = lists:map(fun (X) -> to_string(X, Config) end, Flat),
+    % format_msg({"~ts", [lists:flatten(Strings)]}, Meta, Config)
   end;
 
 format_msg({report, Report}, _Meta, Config) when is_map(Report) ->
