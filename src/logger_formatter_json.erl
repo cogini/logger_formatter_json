@@ -190,7 +190,11 @@ process_io_list([H | T], Acc, Config) when is_list(H) ->
   process_io_list(T, [process_io_list(H, [], Config) | Acc], Config);
 
 process_io_list([H | T], Acc, Config) ->
-  process_io_list(T, [iolist_to_string(H, Config) | Acc], Config).
+  process_io_list(T, [iolist_to_string(H, Config) | Acc], Config);
+
+% Handle improper list, e.g., [<<"foo">> | <<"bar">>
+% Crash reports can contain improper lists
+process_io_list(T, Acc, Config) -> process_io_list([], [iolist_to_string(T, Config) | Acc], Config).
 
 % @doc Format embedded things in iolist that iolist_to_binary chokes on
 % https://www.erlang.org/doc/system/expressions.html
