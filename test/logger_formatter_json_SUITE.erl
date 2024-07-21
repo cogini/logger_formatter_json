@@ -214,7 +214,7 @@ unstructured(_) ->
   ),
   ?assertEqual(
     <<
-      "{\"msg\":\"#PID<0.5054.0> running ExampleWeb.Endpoint (connection #PID<0.5053.0>, stream id 1) terminated\\nServer: app.tezrac.com:80 (http)\\nRequest: GET /dash/listings/44\\n** (exit) an exception was raised:\\n    ** (KeyError) key :prod_identifier not found in: %{\\n  id: \\\"gid://shopify/ProductVariant/42739636764833\\\",\\n  description: \\\"Example\\\"\\n}\\n        (example 0.1.0) lib/example_web/controllers/dash_controller.ex:58: anonymous fn/2 in ExampleWeb.DashController.admin_listing_page/2\\n        (elixir 1.17.2) lib/enum.ex:4301: Enum.filter_list/2\\n        (example 0.1.0) lib/example_web/controllers/dash_controller.ex:58: ExampleWeb.DashController.admin_listing_page/2\\n        (example 0.1.0) lib/example_web/controllers/dash_controller.ex:1: ExampleWeb.DashController.action/2\\n        (example 0.1.0) lib/example_web/controllers/dash_controller.ex:1: ExampleWeb.DashController.phoenix_controller_pipeline/2\\n        (phoenix 1.7.14) lib/phoenix/router.ex:484: Phoenix.Router.__call__/5\\n        (example 0.1.0) deps/plug/lib/plug/error_handler.ex:80: ExampleWeb.Router.call/2\\n        (example 0.1.0) lib/example_web/endpoint.ex:1: ExampleWeb.Endpoint.plug_builder_call/2\",\"level\":\"info\"}\n"
+      "{\"msg\":\"<0.5054.0> running ExampleWeb.Endpoint (connection <0.5053.0>, stream id 1) terminated\\nServer: app.example.com:80 (http)\\nRequest: GET /dash/listings/44\\n** (exit) an exception was raised:\\n    ** (KeyError) key :prod_identifier not found in: %{\\n  id: \\\"gid://shopify/ProductVariant/42739636764833\\\",\\n  description: \\\"Example\\\"\\n}\\n        (example 0.1.0) lib/example_web/controllers/dash_controller.ex:58: anonymous fn/2 in ExampleWeb.DashController.admin_listing_page/2\\n        (elixir 1.17.2) lib/enum.ex:4301: Enum.filter_list/2\\n        (example 0.1.0) lib/example_web/controllers/dash_controller.ex:58: ExampleWeb.DashController.admin_listing_page/2\\n        (example 0.1.0) lib/example_web/controllers/dash_controller.ex:1: ExampleWeb.DashController.action/2\\n        (example 0.1.0) lib/example_web/controllers/dash_controller.ex:1: ExampleWeb.DashController.phoenix_controller_pipeline/2\\n        (phoenix 1.7.14) lib/phoenix/router.ex:484: Phoenix.Router.__call__/5\\n        (example 0.1.0) deps/plug/lib/plug/error_handler.ex:80: ExampleWeb.Router.call/2\\n        (example 0.1.0) lib/example_web/endpoint.ex:1: ExampleWeb.Endpoint.plug_builder_call/2\",\"level\":\"info\"}\n"
     >>,
     iolist_to_binary(
       logger_formatter_json:format(
@@ -225,15 +225,15 @@ unstructured(_) ->
           {
             string,
             [
-              <<"#PID<0.5054.0>">>,
+              c:pid(0, 5054, 0),
               <<" running ">>,
               <<"ExampleWeb.Endpoint">>,
-              [<<" (connection ">>, <<"#PID<0.5053.0>">>, <<", stream id ">>, <<"1">>, 41],
+              [<<" (connection ">>, c:pid(0, 5053, 0), <<", stream id ">>, <<"1">>, 41],
               <<" terminated\n">>,
               [
                 [
                   <<"Server: ">>,
-                  <<"app.tezrac.com">>,
+                  <<"app.example.com">>,
                   <<":">>,
                   <<"80">>,
                   32,
