@@ -176,6 +176,65 @@ to_string(X, Config) when is_binary(X) ->
 
 to_string(X, Config) -> io_lib:format(p(Config), [X]).
 
+-spec process_io_list(List, Config) -> binary() when List :: list(), Config :: config().
+% process_io_list(List, Config) when is_list(List) ->
+%     Strings = lists:map(fun (X) -> iolist_to_string(X, Config) end, List),
+%     iolist_to_binary(Strings).
+
+process_io_list([], _Config) -> [];
+process_io_list(List, Config) ->
+  process_io_list(List, [], Config).
+
+process_io_list([], Acc, _Config) ->
+  iolist_to_binary(lists:reverse(Acc));
+
+process_io_list([H | T], Acc, Config) when is_list(H) ->
+  process_io_list(T, [process_io_list(H, [], Config) | Acc], Config);
+
+process_io_list([H | T], Acc, Config) ->
+  process_io_list(T, [iolist_to_string(H, Config) | Acc], Config).
+
+% @doc Format embedded things in iolist that iolist_to_binary chokes on
+% https://www.erlang.org/doc/system/expressions.html
+% is_atom/1
+% is_binary/1
+% is_bitstring/1
+% is_boolean/1
+% is_float/1
+% is_function/1
+% is_function/2
+% is_integer/1
+% is_list/1
+% is_map/1
+% is_number/1
+% is_pid/1
+% is_port/1
+% is_record/2
+% is_record/3
+% is_reference/1
+% is_tuple/1
+iolist_to_string(X, _) when is_atom(X) -> atom_to_list(X);
+iolist_to_string(X, _) when is_integer(X) -> X;
+iolist_to_string(X, _) when is_pid(X) -> pid_to_list(X);
+iolist_to_string(X, _) when is_reference(X) -> ref_to_list(X);
+
+iolist_to_string(<<>>, _) -> <<>>;
+iolist_to_string(X, Config) when is_binary(X) ->
+  case is_printable(X) of
+    true -> X;
+    _ -> io_lib:format(p(Config), [X])
+  end;
+
+iolist_to_string(X, Config) when is_list(X) ->
+  % case printable_list(lists:flatten(X)) of
+  case printable_list(X) of
+    true -> X;
+    _ ->
+      io_lib:format(p(Config), [X])
+  end;
+
+iolist_to_string(X, Config) -> io_lib:format(p(Config), [X]).
+
 
 -spec printable_list(list()) -> boolean().
 % Print empty string as empty list
@@ -212,15 +271,32 @@ print_string(X, Config) when is_list(X) ->
   | {string, unicode:chardata()} , Meta :: logger:metadata() , Config :: config().
 % format_msg({string, Chardata}, Meta, Config) -> format_msg({"~ts", [Chardata]}, Meta, Config);
 format_msg({string, Chardata}, Meta, Config) when is_binary(Chardata) ->
-  format_msg({string, unicode:characters_to_list(Chardata, unicode)}, Meta, Config);
+  case is_printable(Chardata) of
+    true -> format_msg({"~ts", [Chardata]}, Meta, Config);
+    false ->format_msg({"~tp", [Chardata]}, Meta, Config)
+  end;
 
 format_msg({string, Chardata}, Meta, Config) ->
   case io_lib:printable_unicode_list(Chardata) of
     true -> format_msg({"~ts", [Chardata]}, Meta, Config);
-    false -> format_msg({"~ts", [iolist_to_binary(Chardata)]}, Meta, Config)
-    % Flat = lists:flatten(Chardata),
-    % Strings = lists:map(fun (X) -> to_string(X, Config) end, Flat),
-    % format_msg({"~ts", [lists:flatten(Strings)]}, Meta, Config)
+    false ->
+      try
+        format_msg({"~ts", [process_io_list(Chardata, Config)]}, Meta, Config)
+      catch
+        % _:_ ->
+        %   format_msg({"~tp", [Chardata]}, Meta, Config)
+        C:R : S ->
+          P = p(Config),
+          format_msg(
+            {
+              "FORMAT CRASH: " ++ P ++ "; Reason: " ++ P,
+              % [Chardata, {C, R, logger:filter_stacktrace(?MODULE, S)}]
+              [Chardata, {C, R, S}]
+            },
+            Meta,
+            Config
+          )
+      end
   end;
 
 format_msg({report, Report}, _Meta, Config) when is_map(Report) ->
@@ -527,7 +603,6 @@ get_utc_config() ->
         _ -> false
       end
   end.
-
 
 -spec check_config(Config) -> ok | {error, term()} when Config :: config().
 check_config(Config) when is_map(Config) -> do_check_config(maps:to_list(Config));
