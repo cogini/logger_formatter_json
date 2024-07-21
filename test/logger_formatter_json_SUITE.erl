@@ -185,6 +185,33 @@ unstructured(_) ->
       )
     )
   ),
+  ?assertEqual(
+    <<
+      "{\"msg\":\"Postgrex.Protocol (<0.6341.0>) failed to connect: ** (DBConnection.ConnectionError) tcp connect (postgres:5432): timeout\",\"level\":\"info\"}\n"
+    >>,
+    iolist_to_binary(
+      logger_formatter_json:format(
+        #{
+          level => info,
+          msg
+          =>
+          {
+            string,
+            [
+              <<"Postgrex.Protocol">>,
+              32,
+              40,
+              c:pid(0, 6341, 0),
+              <<") failed to connect: ">>
+              | <<"** (DBConnection.ConnectionError) tcp connect (postgres:5432): timeout">>
+            ]
+          },
+          meta => #{}
+        },
+        Config
+      )
+    )
+  ),
   ok.
 
 
