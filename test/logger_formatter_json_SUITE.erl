@@ -38,7 +38,7 @@ to_string(_) ->
     <<"793µs"/utf8>>,
     iolist_to_binary(logger_formatter_json:to_string(<<"793µs"/utf8>>, Config))
   ),
-  ?assertEqual("<0.250.0>", logger_formatter_json:to_string(c:pid(0,250,0), Config)).
+  ?assertEqual("<0.250.0>", logger_formatter_json:to_string(c:pid(0, 250, 0), Config)).
 
 
 printable_list(_) -> ?assertEqual(true, logger_formatter_json:printable_list("foo")).
