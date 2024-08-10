@@ -104,5 +104,31 @@ defmodule LoggerFormatterJsonTest do
                  )
                )
     end
+end
+
+  describe "crash" do
+    test "String with a binary" do
+      expected = ~s"""
+      {\"msg\":\"<0.767.0> running Phoenix.Endpoint.SyncCodeReloadPlug (connection <0.766.0>, stream id 1) terminated\\nServer: localhost:4000 (http)\\nRequest: GET /\\n** (exit) an exception was raised:\\n    ** (ArithmeticError) bad argument in arithmetic expression\\n        (erts 15.0) :erlang.+(1, :a)\\n        (phoenix_container_example 0.1.0) lib/phoenix_container_example_web/controllers/page_controller.ex:8: PhoenixContainerExampleWeb.PageController.home/2\\n        (phoenix_container_example 0.1.0) lib/phoenix_container_example_web/controllers/page_controller.ex:1: PhoenixContainerExampleWeb.PageController.action/2\\n        (phoenix_container_example 0.1.0) lib/phoenix_container_example_web/controllers/page_controller.ex:1: PhoenixContainerExampleWeb.PageController.phoenix_controller_pipeline/2\\n        (phoenix 1.7.14) lib/phoenix/router.ex:484: Phoenix.Router.__call__/5\\n        (phoenix_container_example 0.1.0) lib/phoenix_container_example_web/endpoint.ex:1: PhoenixContainerExampleWeb.Endpoint.plug_builder_call/2\\n        (phoenix_container_example 0.1.0) deps/plug/lib/plug/debugger.ex:136: PhoenixContainerExampleWeb.Endpoint.\\\"call (overridable 3)\\\"/2\\n        (phoenix_container_example 0.1.0) lib/phoenix_container_example_web/endpoint.ex:1: PhoenixContainerExampleWeb.Endpoint.call/2\\n        (phoenix 1.7.14) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4\\n        (plug_cowboy 2.7.1) lib/plug/cowboy/handler.ex:11: Plug.Cowboy.Handler.init/2\\n        (cowboy 2.12.0) /Users/jake/work/phoenix_container_example/deps/cowboy/src/cowboy_handler.erl:37: :cowboy_handler.execute/2\\n        (cowboy 2.12.0) /Users/jake/work/phoenix_container_example/deps/cowboy/src/cowboy_stream_h.erl:306: :cowboy_stream_h.execute/3\\n        (cowboy 2.12.0) /Users/jake/work/phoenix_container_example/deps/cowboy/src/cowboy_stream_h.erl:295: :cowboy_stream_h.request_process/3\\n        (stdlib 6.0) proc_lib.erl:329: :proc_lib.init_p_do_apply/3\",\"level\":\"info\"}
+      """
+
+      msg = {:string,[:c.pid(0, 767, 0),<<" running ">>,
+         <<"Phoenix.Endpoint.SyncCodeReloadPlug">>,
+         [<<" (connection ">>,:c.pid(0, 766, 0),<<", stream id ">>,<<"1">>,
+          41],
+         <<" terminated\n">>,
+         [[<<"Server: ">>,<<"localhost">>,<<":">>,<<"4000">>,32,40,<<"http">>,
+           41,10],
+          [<<"Request: ">>,<<"GET">>,32,<<"/">>,10]]|
+         <<"** (exit) an exception was raised:\n    ** (ArithmeticError) bad argument in arithmetic expression\n        (erts 15.0) :erlang.+(1, :a)\n        (phoenix_container_example 0.1.0) lib/phoenix_container_example_web/controllers/page_controller.ex:8: PhoenixContainerExampleWeb.PageController.home/2\n        (phoenix_container_example 0.1.0) lib/phoenix_container_example_web/controllers/page_controller.ex:1: PhoenixContainerExampleWeb.PageController.action/2\n        (phoenix_container_example 0.1.0) lib/phoenix_container_example_web/controllers/page_controller.ex:1: PhoenixContainerExampleWeb.PageController.phoenix_controller_pipeline/2\n        (phoenix 1.7.14) lib/phoenix/router.ex:484: Phoenix.Router.__call__/5\n        (phoenix_container_example 0.1.0) lib/phoenix_container_example_web/endpoint.ex:1: PhoenixContainerExampleWeb.Endpoint.plug_builder_call/2\n        (phoenix_container_example 0.1.0) deps/plug/lib/plug/debugger.ex:136: PhoenixContainerExampleWeb.Endpoint.\"call (overridable 3)\"/2\n        (phoenix_container_example 0.1.0) lib/phoenix_container_example_web/endpoint.ex:1: PhoenixContainerExampleWeb.Endpoint.call/2\n        (phoenix 1.7.14) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4\n        (plug_cowboy 2.7.1) lib/plug/cowboy/handler.ex:11: Plug.Cowboy.Handler.init/2\n        (cowboy 2.12.0) /Users/jake/work/phoenix_container_example/deps/cowboy/src/cowboy_handler.erl:37: :cowboy_handler.execute/2\n        (cowboy 2.12.0) /Users/jake/work/phoenix_container_example/deps/cowboy/src/cowboy_stream_h.erl:306: :cowboy_stream_h.execute/3\n        (cowboy 2.12.0) /Users/jake/work/phoenix_container_example/deps/cowboy/src/cowboy_stream_h.erl:295: :cowboy_stream_h.request_process/3\n        (stdlib 6.0) proc_lib.erl:329: :proc_lib.init_p_do_apply/3">>]}
+
+      assert expected ==
+               to_string(
+                 :logger_formatter_json.format(
+                   %{level: :info, msg: msg, meta: %{}},
+                   %{}
+                 )
+               )
+    end
   end
 end
