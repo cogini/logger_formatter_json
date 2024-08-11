@@ -149,6 +149,7 @@ to_output(_Key, Value, Config) when is_map(Value) ->
 
 to_output(Key, Value, Config) -> iolist_to_binary(to_string(Key, Value, Config)).
 
+
 to_string({level, OutputFormat}, Value, Config) -> format_level(OutputFormat, Value, Config);
 to_string(system_time, Value, Config) -> format_time(Value, Config);
 % to_string({system_time, OutputFormat},Value,Config) ->
