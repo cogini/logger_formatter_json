@@ -174,7 +174,11 @@ to_output(_Key, {TK, Value}, Config) when is_map(Value) ->
     Value2 =
         lists:map(fun({K, V}) -> {K, to_output(K, V, Config)} end,
                   lists:keysort(1, maps:to_list(Value))),
-    to_output(_Key, {TK, Value2}, Config);
+    iolist_to_binary(["{",
+                      to_string(TK, Config),
+                      ",",
+                      thoas:encode_to_iodata(Value2, #{escape => unicode}),
+                      "}"]);
 to_output(Key, Value, Config) ->
     iolist_to_binary(to_string(Key, Value, Config)).
 
