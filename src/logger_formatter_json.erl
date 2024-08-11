@@ -246,13 +246,26 @@ to_thoas(Value) when is_float(Value) ->
 to_thoas(Value) when is_integer(Value) ->
     Value;
 % is_list/1
+to_thoas([]) ->
+    [];
 to_thoas(Value) when is_list(Value) ->
     case printable_list(lists:flatten(Value)) of
         true ->
             % list_to_binary(Value);
             iolist_to_binary(io_lib:format("~ts", [Value]));
         _ ->
-            iolist_to_binary(io_lib:format("~0tp", [Value]))
+            case Value of
+                [{_K, _V} | _Rest] ->
+                    try
+                        lists:map(fun({K, V}) -> {to_thoas(K), to_thoas(V)} end,
+                                  lists:keysort(1, Value))
+                    catch
+                        _:_ ->
+                            iolist_to_binary(io_lib:format("~0tp", [Value]))
+                    end;
+                _ ->
+                    iolist_to_binary(io_lib:format("~0tp", [Value]))
+            end
     end;
 % is_pid/1
 to_thoas(Value) when is_pid(Value) ->
@@ -269,11 +282,11 @@ to_thoas(Value) when is_map(Value) ->
 to_thoas(Value) when is_number(Value) ->
     Value;
 % % is_tuple/1
-% to_thoas(Value) when is_tuple(Value) ->
-%     Value1 = lists:map(fun to_thoas/1, tuple_to_list(Value)),
-%     iolist_to_binary(io_lib:format("{~0tp}", [Value1]);
-%     % iolist_to_binary(["{", Value1, "}"]);
-%     % iolist_to_binary(["{", thoas:encode_to_iodata(Value1, #{escape => unicode}), "}"]);
+to_thoas(Value) when is_tuple(Value) ->
+    lists:map(fun to_thoas/1, tuple_to_list(Value));
+    % iolist_to_binary(io_lib:format("{~0tp}", [Value1]);
+    % iolist_to_binary(["{", Value1, "}"]);
+    % iolist_to_binary(["{", thoas:encode_to_iodata(Value1, #{escape => unicode}), "}"]);
 % is_tuple/1
 % is_function/1
 % is_function/2
