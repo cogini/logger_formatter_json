@@ -1,27 +1,19 @@
-{
-  application,
-  logger_formatter_json,
-  [
-    {description, "A formatter for the OTP logger application that outputs JSON"},
-    {vsn, "0.8.3"},
-    {registered, []},
-    {applications, [kernel, stdlib, thoas]},
-    {env, []},
-    {modules, []},
-    {licenses, ["Apache-2.0"]},
-    {links, [{"Github", "https://github.com/cogini/logger_formatter_json/"}]},
-    {
-      files,
-      [
-        "src",
-        "rebar.config",
-        "rebar.lock",
-        "CHANGELOG.md",
-        "CODE_OF_CONDUCT.md",
-        "CONTRIBUTING.md",
-        "README.md",
-        "LICENSE.md"
-      ]
-    }
-  ]
-}.
+{application,
+ logger_formatter_json,
+ [{description, "A formatter for the OTP logger application that outputs JSON"},
+  {vsn, "0.8.3"},
+  {registered, []},
+  {applications, [kernel, stdlib, thoas]},
+  {env, []},
+  {modules, []},
+  {licenses, ["Apache-2.0"]},
+  {links, [{"Github", "https://github.com/cogini/logger_formatter_json/"}]},
+  {files,
+   ["src",
+    "rebar.config",
+    "rebar.lock",
+    "CHANGELOG.md",
+    "CODE_OF_CONDUCT.md",
+    "CONTRIBUTING.md",
+    "README.md",
+    "LICENSE.md"]}]}.
