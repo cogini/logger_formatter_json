@@ -12,7 +12,8 @@
 
 -ifdef(TEST).
 
--export([format_msg/3, to_string/2, is_printable/1, printable_list/1, print_string/2]).
+-export([format_msg/3, to_string/2, to_thoas/1, is_printable/1, printable_list/1,
+         print_string/2]).
 
 -endif.
 
@@ -102,14 +103,14 @@ map_type(Key, #{types := Types}) ->
 do_format(Level, Data0, [all | _Format], _Seen, Config) ->
     Data = maps:put(level, Level, Data0),
     lists:map(fun({K, V}) -> {map_name(K, Config), to_output(K, V, Config)} end,
-              maps:to_list(Data));
+              lists:keysort(1, maps:to_list(Data)));
 do_format(Level, Data0, [rest | _Format], Seen, Config) ->
     Data1 = maps:put(level, Level, Data0),
     Data =
         maps:without(
             lists:flatten(Seen), Data1),
     lists:map(fun({K, V}) -> {map_name(K, Config), to_output(K, V, Config)} end,
-              maps:to_list(Data));
+              lists:keysort(1, maps:to_list(Data)));
 do_format(Level, Data0, [{group, Key, Keys} | Format], Seen, Config) ->
     do_format(Level, Data0, [{group, Key, Keys, #{}} | Format], Seen, Config);
 do_format(Level, Data0, [{group, Key, Keys, GroupTypes} | Format], Seen, Config) ->
@@ -119,7 +120,7 @@ do_format(Level, Data0, [{group, Key, Keys, GroupTypes} | Format], Seen, Config)
     Data = maps:with(Keys, Data0),
     Data1 =
         lists:map(fun({K, V}) -> {maps:get(K, Types, K), to_output(K, V, Config)} end,
-                  maps:to_list(Data)),
+                  lists:keysort(1, maps:to_list(Data))),
     [{map_name(Key, Config), Data1} | do_format(Level, Data0, Format, [Keys | Seen], Config)];
 do_format(Level, Data, [level | Format], Seen, Config) ->
     [{map_name(level, Config), to_output(map_type(level, Config), Level, Config)}
@@ -167,20 +168,8 @@ value([], Value) ->
 value(_, _) ->
     error.
 
-to_output(_Key, Value, Config) when is_map(Value) ->
-    lists:map(fun({K, V}) -> {K, to_output(K, V, Config)} end,
-              lists:keysort(1, maps:to_list(Value)));
-to_output(_Key, {TK, Value}, Config) when is_map(Value) ->
-    Value2 =
-        lists:map(fun({K, V}) -> {K, to_output(K, V, Config)} end,
-                  lists:keysort(1, maps:to_list(Value))),
-    iolist_to_binary(["{",
-                      to_string(TK, Config),
-                      ",",
-                      thoas:encode_to_iodata(Value2, #{escape => unicode}),
-                      "}"]);
-to_output(Key, Value, Config) ->
-    iolist_to_binary(to_string(Key, Value, Config)).
+to_output(_Key, Value, _Config) ->
+    to_thoas(Value).
 
 to_string({level, OutputFormat}, Value, Config) ->
     format_level(OutputFormat, Value, Config);
@@ -228,6 +217,71 @@ to_string(X, Config) when is_binary(X) ->
     end;
 to_string(X, Config) ->
     io_lib:format(p(Config), [X]).
+
+% Convert data to input that Thoas can handle
+% is_atom/1
+to_thoas(Value) when is_atom(Value) ->
+    % atom_to_list(Value);
+    Value;
+% is_binary/1
+to_thoas(<<>>) ->
+    <<>>;
+to_thoas(Value) when is_binary(Value) ->
+    case is_printable(Value) of
+        true ->
+            Value;
+        _ ->
+            iolist_to_binary(io_lib:format("~w", [Value]))
+    end;
+% is_bitstring/1
+to_thoas(Value) when is_bitstring(Value) ->
+    % io_lib:format("~0tp", [Value]);
+    Value;
+% is_boolean/1
+to_thoas(Value) when is_boolean(Value) ->
+    Value;
+% is_float/1
+to_thoas(Value) when is_float(Value) ->
+    Value;
+to_thoas(Value) when is_integer(Value) ->
+    Value;
+% is_list/1
+to_thoas(Value) when is_list(Value) ->
+    case printable_list(lists:flatten(Value)) of
+        true ->
+            % list_to_binary(Value);
+            iolist_to_binary(io_lib:format("~ts", [Value]));
+        _ ->
+            iolist_to_binary(io_lib:format("~0tp", [Value]))
+    end;
+% is_pid/1
+to_thoas(Value) when is_pid(Value) ->
+    pid_to_list(Value);
+% is_reference/1
+to_thoas(Value) when is_reference(Value) ->
+    ref_to_list(Value);
+% is_map/1
+to_thoas(Value) when is_map(Value) ->
+    lists:map(fun({K, V}) -> {to_thoas(K), to_thoas(V)} end,
+              lists:keysort(1, maps:to_list(Value)));
+% thoas:encode(Value1, #{escape => unicode});
+% is_number/1
+to_thoas(Value) when is_number(Value) ->
+    Value;
+% % is_tuple/1
+% to_thoas(Value) when is_tuple(Value) ->
+%     Value1 = lists:map(fun to_thoas/1, tuple_to_list(Value)),
+%     iolist_to_binary(io_lib:format("{~0tp}", [Value1]);
+%     % iolist_to_binary(["{", Value1, "}"]);
+%     % iolist_to_binary(["{", thoas:encode_to_iodata(Value1, #{escape => unicode}), "}"]);
+% is_tuple/1
+% is_function/1
+% is_function/2
+% is_record/2
+% is_record/3
+% is_port/1
+to_thoas(Value) ->
+    iolist_to_binary(io_lib:format("~0tp", [Value])).
 
 -spec process_io_list(List, Config) -> binary()
     when List :: list(),
