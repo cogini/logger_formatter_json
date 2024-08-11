@@ -168,12 +168,13 @@ value(_, _) ->
     error.
 
 to_output(_Key, Value, Config) when is_map(Value) ->
-    % maps:iterator/2 is only in OTP 27+
-    % lists:map(fun ({K, V}) -> {K, to_output(K, V, Config)} end, maps:to_list(maps:iterator(Value, ordered)));
     lists:map(fun({K, V}) -> {K, to_output(K, V, Config)} end,
               lists:keysort(1, maps:to_list(Value)));
 to_output(_Key, {TK, Value}, Config) when is_map(Value) ->
-    {to_output(_Key, TK, Config), to_output(_Key, Value, Config)};
+    Value2 =
+        lists:map(fun({K, V}) -> {K, to_output(K, V, Config)} end,
+                  lists:keysort(1, maps:to_list(Value))),
+    to_output(_Key, {TK, Value2}, Config);
 to_output(Key, Value, Config) ->
     iolist_to_binary(to_string(Key, Value, Config)).
 
@@ -198,6 +199,13 @@ to_string(X, _) when is_pid(X) ->
     pid_to_list(X);
 to_string(X, _) when is_reference(X) ->
     ref_to_list(X);
+% to_string(X, Config) when is_map(X) ->
+%     lists:map(fun({K, V}) -> {to_string(K, Config), to_string(V, Config)} end,
+%                   lists:keysort(1, maps:to_list(X)));
+% to_string({Key, Value}, Config) when is_map(Value) ->
+%     V2 = lists:map(fun({K, V}) -> {to_string(K, Config), to_string(V, Config)} end,
+%                   lists:keysort(1, maps:to_list(Value))),
+%     to_string({Key, V2}, Config);
 to_string(X, Config) when is_list(X) ->
     case printable_list(lists:flatten(X)) of
         true ->
