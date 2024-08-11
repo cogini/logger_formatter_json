@@ -54,7 +54,7 @@ jobs:
           restore-keys: ${{ matrix.otp }}-${{ matrix.elixir }}-
 
       - name: Check formatting
-        run: rebar3 steamroll --check
+        run: rebar3 format -v
 
       - name: Run Erlang tests
         run: rebar3 ct
