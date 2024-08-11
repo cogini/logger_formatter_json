@@ -284,9 +284,9 @@ to_thoas(Value) when is_number(Value) ->
 % % is_tuple/1
 to_thoas(Value) when is_tuple(Value) ->
     lists:map(fun to_thoas/1, tuple_to_list(Value));
-    % iolist_to_binary(io_lib:format("{~0tp}", [Value1]);
-    % iolist_to_binary(["{", Value1, "}"]);
-    % iolist_to_binary(["{", thoas:encode_to_iodata(Value1, #{escape => unicode}), "}"]);
+% iolist_to_binary(io_lib:format("{~0tp}", [Value1]);
+% iolist_to_binary(["{", Value1, "}"]);
+% iolist_to_binary(["{", thoas:encode_to_iodata(Value1, #{escape => unicode}), "}"]);
 % is_tuple/1
 % is_function/1
 % is_function/2
