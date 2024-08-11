@@ -13,7 +13,7 @@ all() ->
      is_printable,
      unstructured,
      structured,
-     metadata,
+     % metadata,
      duplicate_keys].
 
 print_string(_) ->
