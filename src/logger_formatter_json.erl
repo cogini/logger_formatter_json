@@ -168,21 +168,29 @@ value([], Value) ->
 value(_, _) ->
     error.
 
-to_output(_Key, Value, _Config) ->
-    to_thoas(Value).
-
-to_string({level, OutputFormat}, Value, Config) ->
+to_output({level, OutputFormat}, Value, Config) ->
     format_level(OutputFormat, Value, Config);
-to_string(system_time, Value, Config) ->
-    format_time(Value, Config);
+to_output(system_time, Value, Config) ->
+    list_to_binary(format_time(Value, Config));
 % to_string({system_time, OutputFormat},Value,Config) ->
 %     format_time(OutputFormat, Value,Config);
-to_string(mfa, Value, Config) ->
-    format_mfa(Value, Config);
-% to_string(crash_reason,Value,Config) ->
-%     format_crash_reason(Value,Config);
-to_string(_, Value, Config) ->
-    to_string(Value, Config).
+to_output(mfa, Value, Config) ->
+    list_to_binary(format_mfa(Value, Config));
+to_output(_mfa, Value, _Config) ->
+    to_thoas(Value).
+
+% to_string({level, OutputFormat}, Value, Config) ->
+%     format_level(OutputFormat, Value, Config);
+% to_string(system_time, Value, Config) ->
+%     format_time(Value, Config);
+% % to_string({system_time, OutputFormat},Value,Config) ->
+% %     format_time(OutputFormat, Value,Config);
+% to_string(mfa, Value, Config) ->
+%     format_mfa(Value, Config);
+% % to_string(crash_reason,Value,Config) ->
+% %     format_crash_reason(Value,Config);
+% to_string(_, Value, Config) ->
+%     to_string(Value, Config).
 
 to_string(X, _) when is_atom(X) ->
     atom_to_list(X);
@@ -269,10 +277,10 @@ to_thoas(Value) when is_list(Value) ->
     end;
 % is_pid/1
 to_thoas(Value) when is_pid(Value) ->
-    pid_to_list(Value);
+    list_to_binary(pid_to_list(Value));
 % is_reference/1
 to_thoas(Value) when is_reference(Value) ->
-    ref_to_list(Value);
+    list_to_binary(ref_to_list(Value));
 % is_map/1
 to_thoas(Value) when is_map(Value) ->
     lists:map(fun({K, V}) -> {to_thoas(K), to_thoas(V)} end,
