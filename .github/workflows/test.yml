@@ -94,6 +94,15 @@ jobs:
         working-directory: mix_tests
         run: mix do local.rebar --force, local.hex --force
 
+      # Force full recompile on builds that are retried.
+      - name: Clean deps to avoid flaky incremental builds
+        working-directory: mix_tests
+        if: github.run_attempt != '1'
+        run: |
+          mix deps.clean --all
+          mix clean
+        shell: sh
+
       - name: Get Elixir deps
         working-directory: mix_tests
         run: mix deps.get
