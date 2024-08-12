@@ -67,25 +67,23 @@ jobs:
         run: rebar3 ct
 
       - name: Cache deps
-        working-directory: mix_tests
-        id: cache-deps
         uses: actions/cache@v4
+        id: cache-deps
         env:
           cache-name: cache-elixir-deps
         with:
-          path: app/deps
+          path: mix_tests/deps
           key: ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-${{ hashFiles('**/mix.lock') }}
           restore-keys: |
             ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-
 
       - name: Cache compiled build
-        working-directory: mix_tests
         id: cache-build
         uses: actions/cache@v4
         env:
           cache-name: cache-compiled-build
         with:
-          path: app/_build
+          path: mix_test/_build
           key: ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-${{ hashFiles('**/mix.lock') }}
           restore-keys: |
             ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-
