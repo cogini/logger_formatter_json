@@ -15,40 +15,66 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        otp: ['24', '25', '26', '27']
-        elixir: ['1.13.4', '1.14.5', '1.15.7', '1.16.3', '1.17.2']
+        otp: ['24', '25', '26', '27', '28', '29']
+        elixir: ['1.13.4', '1.14.5', '1.15.7', '1.16.3', '1.17.3', '1.18.4', '1.19.5']
         # https://hexdocs.pm/elixir/compatibility-and-deprecations.html
         exclude:
           - otp: '24'
-            elixir: '1.17.2'
+            elixir: '1.19.5'
+          - otp: '24'
+            elixir: '1.18.4'
+          - otp: '24'
+            elixir: '1.17.3'
+          - otp: '25'
+            elixir: '1.19.5'
+          - otp: '26'
+            elixir: '1.13.4'
+          - otp: '26'
+            elixir: '1.14.5'
           - otp: '27'
-            elixir: '1.16.3'
+            elixir: '1.13.4'
+          - otp: '27'
+            elixir: '1.14.5'
           - otp: '27'
             elixir: '1.15.7'
           - otp: '27'
-            elixir: '1.14.5'
-          - otp: '26'
-            elixir: '1.14.5'
-          - otp: '27'
+            elixir: '1.16.3'
+          - otp: '28'
             elixir: '1.13.4'
-          - otp: '26'
+          - otp: '28'
+            elixir: '1.14.5'
+          - otp: '28'
+            elixir: '1.15.7'
+          - otp: '28'
+            elixir: '1.16.3'
+          - otp: '28'
+            elixir: '1.17.3'
+          - otp: '29'
             elixir: '1.13.4'
+          - otp: '29'
+            elixir: '1.14.5'
+          - otp: '29'
+            elixir: '1.15.7'
+          - otp: '29'
+            elixir: '1.16.3'
+          - otp: '29'
+            elixir: '1.17.3'
     env:
       MIX_ENV: test
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install Erlang and Elixir
         uses: erlef/setup-beam@v1
         with:
-          otp-version: ${{matrix.otp}}
-          elixir-version: ${{matrix.elixir}}
+          otp-version: ${{ matrix.otp }}
+          elixir-version: ${{ matrix.elixir }}
           # Could be 'latest'
           rebar3-version: '3.23.0'
 
       - name: Retrieve cached deps
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: _build
           key: ${{ matrix.otp }}-${{ matrix.elixir}}-${{ hashFiles('**/rebar.lock') }}
@@ -66,31 +92,31 @@ jobs:
       - name: Run Erlang tests
         run: rebar3 ct
 
-      - name: Cache deps
-        uses: actions/cache@v4
-        id: cache-deps
+      - name: Install Elixir tools
+        working-directory: mix_tests
+        run: mix do local.rebar --force, local.hex --force
+
+      - name: Cache Elixir deps
+        uses: actions/cache@v5
         env:
-          cache-name: cache-elixir-deps
+          cache-name: cache-elixir-deps-${{ github.ref_name }}
         with:
           path: mix_tests/deps
-          key: ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-${{ hashFiles('**/mix.lock') }}
+          key: |
+            mix-${{env.cache-name}}-${{matrix.otp}}-${{matrix.elixir}}-${{ hashFiles('**/mix.lock') }}
           restore-keys: |
-            ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-
+            mix-${{env.cache-name}}-${{matrix.otp}}-${{matrix.elixir}}-
 
       - name: Cache compiled build
-        id: cache-build
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         env:
           cache-name: cache-compiled-build
         with:
           path: mix_test/_build
-          key: ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-${{ hashFiles('**/mix.lock') }}
+          key: |
+            mix-${{env.cache-name}}-${{matrix.otp}}-${{matrix.elixir}}-${{ hashFiles('**/mix.lock') }}
           restore-keys: |
-            ${{ runner.os }}-${{matrix.otp}}-${{matrix.elixir}}-mix-${{ env.cache-name }}-
-
-      - name: Install Elixir tools
-        working-directory: mix_tests
-        run: mix do local.rebar --force, local.hex --force
+            mix-${{env.cache-name}}-${{matrix.otp}}-${{matrix.elixir}}-
 
       # Force full recompile on builds that are retried.
       - name: Clean deps to avoid flaky incremental builds
@@ -99,7 +125,6 @@ jobs:
         run: |
           mix deps.clean --all
           mix clean
-        shell: sh
 
       - name: Get Elixir deps
         working-directory: mix_tests
